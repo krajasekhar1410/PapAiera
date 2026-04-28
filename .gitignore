@@ -1,0 +1,21 @@
+# Python generated files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution and packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Project specific files (do not commit large PDF text)
+PP_revised_BREF_2015.pdf
