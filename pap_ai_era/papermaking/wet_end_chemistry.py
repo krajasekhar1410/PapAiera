@@ -25,3 +25,42 @@ def ash_retention_efficiency(headbox_ash_consistency, white_water_ash_consistenc
     if headbox_ash_consistency <= 0:
         return 0.0
     return ((headbox_ash_consistency - white_water_ash_consistency) / headbox_ash_consistency) * 100.0
+
+def suggest_furnish_dosing(hardwood_pct, softwood_pct, broke_pct, target_akd_sizing=True):
+    """
+    Furnish-Based Chemical Dosing Intelligence.
+    Adjusts standard dosing bounds dynamically based on the fiber mix.
+    - Softwood (SW) gives strength but has low surface area.
+    - Hardwood (HW) gives opacity/smoothness but high surface area (eats more sizing).
+    - Broke introduces huge volumes of Anionic Trash, requiring elevated coagulants (PAC/Alum).
+    """
+    total_pct = hardwood_pct + softwood_pct + broke_pct
+    if not (99.0 <= total_pct <= 101.0):
+        # Allow tiny float drift, but reject completely invalid mixes
+        raise ValueError("Furnish percentages must sum to 100%.")
+    
+    # Baseline kg/t assumptions
+    base_alum_pac = 5.0 
+    base_polymer_g_t = 150.0
+    base_akd = 2.0 if target_akd_sizing else 0.0
+    
+    # 1. Anionic Trash Penalty from Broke
+    # Broke carries over previous chemicals and starches, neutralizing cationic polymers
+    alum_multiplier = 1.0 + (broke_pct / 100.0) * 1.5 
+    
+    # 2. Surface Area Penalty from Hardwood
+    # SW has long thick fibers. HW has short, fine fibers. More fines = more surface area to cover with AKD sizing.
+    akd_multiplier = 1.0 + (hardwood_pct / 100.0) * 0.4
+    
+    # 3. Retention penalty from short fibers (HW & Broke)
+    poly_multiplier = 1.0 + ((hardwood_pct + broke_pct) / 100.0) * 0.5
+    
+    return {
+        "suggested_PAC_Alum_kg_t": base_alum_pac * alum_multiplier,
+        "suggested_Polymer_g_t": base_polymer_g_t * poly_multiplier,
+        "suggested_AKD_kg_t": base_akd * akd_multiplier,
+        "furnish_warnings": [
+            "High anionic crash risk" if broke_pct > 30 else "Normal broke load",
+            "High sizing demand due to fines" if hardwood_pct > 60 else "Normal sizing demand"
+        ]
+    }

@@ -9,6 +9,8 @@ This document serves as the comprehensive list of all equations, calculations, a
 * `black_liquor_solids_content(solids_mass, total_mass)`: Percentage of dry solids in black liquor.
 * `pulping_yield(dry_pulp_produced, dry_wood_charged)`: Yield of pulp from raw wood (45-55%).
 * `check_kraft_bat_compliance(water_consumption, steam_consumption, elec_consumption)`: Validates Mill specific consumption against BREF standards.
+* `calculate_h_factor(temperature_celsius, time_minutes)`: Integrates Arrhenius reaction rate targeting specific digester cooking curves.
+* `calculate_pulpmill_mass_balance(wood_charged_bdmt, target_yield_pct, rejects_pct)`: Tracks mass conservation of accepted fiber, lost rejects, and dissolved black liquor organics.
 
 ### Sulphite Pulping (`sulphite.py`)
 * `chemical_recovery_efficiency_sulphite(so2_recovered, so2_charged, base_recovered, base_charged)`: Mg/Ca base and SO2 recovery rates.
@@ -50,6 +52,12 @@ This document serves as the comprehensive list of all equations, calculations, a
 * `broke_percentage(broke_mass, total_production)`: Percentage of reel production returning to the repulper.
 * `overall_retention(white_water_consistency, headbox_consistency)`: Wire section first-pass retention rate.
 * `drying_efficiency(steam_used_in_dryers, water_evaporated)`: Validates specific evaporation steam economy against ~1.2 - 1.4 BAT averages.
+* `calculate_machine_fiber_balance(fiber_in_headbox_kg, wire_retention_pct, broke_generated_pct)`: Estimates net saleable paper by accounting for broke loops and effluent wire losses.
+
+### Wet End Chemistry (`wet_end_chemistry.py`)
+* `calculate_pump_flow_rate_lph(target_dose_kg_t, machine_production_t_h, concentration_gpl)`: Sets physical dosing pump targets from chemical concentration (GPL).
+* `ash_retention_efficiency(headbox_ash_consistency, white_water_ash_consistency)`: Dedicated filler accounting.
+* `suggest_furnish_dosing(hardwood_pct, softwood_pct, broke_pct, target_akd_sizing)`: Heuristic dosing ratios dynamically balancing Hardwood surface fines and Broke anionic trash.
 
 ### Coating & Finishing (`coating.py`)
 * `coating_colour_loss(colour_to_effluent_kg, total_colour_applied_kg)`: Evaluates losses to the biological effluent system.

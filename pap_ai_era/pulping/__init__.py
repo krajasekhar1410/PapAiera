@@ -1,4 +1,4 @@
-from .kraft import kappa_number, chemical_recovery_efficiency, black_liquor_solids_content, pulping_yield, check_kraft_bat_compliance
+from .kraft import kappa_number, chemical_recovery_efficiency, black_liquor_solids_content, pulping_yield, check_kraft_bat_compliance, calculate_h_factor, calculate_pulpmill_mass_balance
 from .recycled import deinking_yield, rcf_rejects_rate, specific_energy_rcf
 from .sulphite import chemical_recovery_efficiency_sulphite, sulphite_yield, evaluate_sulphite_bat_compliance
 from .mechanical import specific_energy_refining, heat_recovery_efficiency, mechanical_yield

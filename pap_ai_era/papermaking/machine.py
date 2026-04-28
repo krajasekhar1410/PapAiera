@@ -39,3 +39,37 @@ def drying_efficiency(steam_used_in_dryers, water_evaporated):
     if water_evaporated <= 0:
         return 0.0
     return steam_used_in_dryers / water_evaporated
+
+def calculate_machine_fiber_balance(fiber_in_headbox_kg, wire_retention_pct, broke_generated_pct, miscellaneous_loss_pct=1.0):
+    """
+    Performs a localized mass balance around the paper machine.
+    Calculates the gross paper rolled onto the reel, the saleable paper minus broke,
+    and the actual white water solids lost to the effluent system.
+    """
+    if fiber_in_headbox_kg <= 0:
+         return {"saleable_paper_out_kg": 0.0, "broke_recycled_kg": 0.0, "effluent_loss_kg": 0.0}
+    
+    # Amount of fiber actually staying on the wire to become paper sheet
+    sheet_formed = fiber_in_headbox_kg * (wire_retention_pct / 100.0)
+    
+    # Amount lost through the wire into the short/long loop
+    white_water_loss = fiber_in_headbox_kg - sheet_formed
+    
+    # Miscellaneous minor losses (evaporation volatiles, dust shedding, press section carry-over)
+    misc_loss = sheet_formed * (miscellaneous_loss_pct / 100.0)
+    
+    gross_reel = sheet_formed - misc_loss
+    
+    # Off-spec paper returned as broke
+    broke_recycled = gross_reel * (broke_generated_pct / 100.0)
+    
+    # What goes out the door
+    saleable_paper = gross_reel - broke_recycled
+    
+    return {
+        "fiber_in_kg": fiber_in_headbox_kg,
+        "saleable_paper_out_kg": saleable_paper,
+        "broke_recycled_kg": broke_recycled,
+        "effluent_loss_kg": white_water_loss, 
+        "unaccounted_misc_loss_kg": misc_loss
+    }

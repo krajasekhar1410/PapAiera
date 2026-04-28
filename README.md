@@ -9,7 +9,7 @@
 The library covers a massive array of metrics across the entire pulp and paper production cycle.
 
 ### 1. Pulping Modules (`pap_ai_era.pulping`)
-* **Kraft (`kraft.py`)**: Kappa numbers, recovery efficiency, black liquor solids, yield, BAT compliance.
+* **Kraft (`kraft.py`)**: H-factor calculation, Digester Mass Balance, Kappa numbers, recovery efficiency, black liquor solids, yield, BAT compliance.
 * **Sulphite (`sulphite.py`)**: Yields for paper/dissolving grades, SO2 and Mg/Ca base recovery.
 * **Mechanical (`mechanical.py`)**: Energy intensity of SGW, PGW, TMP, and CTMP, heat recovery.
 * **Recycled Fibre (`recycled.py`)**: Deinking yield, fiber loss, rejects rates.
@@ -18,7 +18,9 @@ The library covers a massive array of metrics across the entire pulp and paper p
 * **Recovery Cycle (`recovery_cycle.py`)**: Causticizing efficiency, evaporator steam economy, lime kiln energy.
 
 ### 2. Papermaking Modules (`pap_ai_era.papermaking`)
-* **Machine Operations (`machine.py`)**: OEE, broke tracking, wire retention, dryer section economy.
+* **Machine Operations (`machine.py`)**: Paper machine fiber mass balance, OEE, broke tracking, wire retention, dryer section economy.
+* **Wet End Chemistry (`wet_end_chemistry.py`)**: Furnish-based dosing heuristics, physical GPL to LPH pump conversion algorithms, ash retention.
+* **Coating/Finishing (`coating.py`)**: Colour recovery, ultrafiltration efficiency, specific water usage.
 * **Coating/Finishing (`coating.py`)**: Colour recovery, ultrafiltration efficiency, specific water usage.
 
 ### 3. Sustainability (`pap_ai_era.sustainability`)

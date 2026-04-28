@@ -49,3 +49,46 @@ def check_kraft_bat_compliance(water_consumption, steam_consumption, elec_consum
         'electricity': elec_consumption <= 0.8 # general range 0.6-0.8 MWh/ADt
     }
     return compliance
+
+def calculate_h_factor(temperature_celsius, time_minutes):
+    """
+    Calculates the Vroom H-factor for Kraft cooking. 
+    It integrates the reaction rate relative to 100°C over time using the Arrhenius equation.
+    Typically utilized to target a specific cooking degree (Kappa number).
+    """
+    if temperature_celsius <= 0 or time_minutes <= 0:
+        return 0.0
+    
+    # Convert Temp to Kelvin
+    temp_kelvin = temperature_celsius + 273.15
+    # Vroom's established formula for relative reaction rate (k)
+    import math
+    reaction_rate = math.exp(43.2 - (16113.0 / temp_kelvin))
+    
+    # H-factor is the integral of reaction rate over time (in hours)
+    h_factor = reaction_rate * (time_minutes / 60.0)
+    return h_factor
+
+def calculate_pulpmill_mass_balance(wood_charged_bdmt, target_yield_pct, rejects_pct):
+    """
+    Performs a high-level mass balance for the pulp mill digester block.
+    Splits the incoming bone dry wood into accepted pulp, solid rejects, 
+    and dissolved organics (which become black liquor solids).
+    Output is in Bone Dry Metric Tonnes (BDMT).
+    """
+    if wood_charged_bdmt <= 0:
+        return {"accepted_pulp_bdmt": 0.0, "rejects_bdmt": 0.0, "dissolved_solids_bdmt": 0.0}
+        
+    total_pulp = wood_charged_bdmt * (target_yield_pct / 100.0)
+    rejects = wood_charged_bdmt * (rejects_pct / 100.0)
+    accepted_pulp = total_pulp - rejects
+    
+    # Assuming standard conservative mass conservation (ignoring volatile losses like turpentine/methanol here)
+    dissolved_organics = wood_charged_bdmt - total_pulp
+    
+    return {
+        "wood_in_bdmt": wood_charged_bdmt,
+        "accepted_pulp_bdmt": accepted_pulp,
+        "rejects_bdmt": rejects,
+        "dissolved_organics_to_recovery_bdmt": dissolved_organics
+    }
