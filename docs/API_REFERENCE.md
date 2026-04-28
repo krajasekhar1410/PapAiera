@@ -88,5 +88,12 @@ This document serves as the comprehensive list of all equations, calculations, a
 
 ## 4. AI/Math Tools (`pap_ai_era.optimization_models`)
 
-### Model Example
-* `optimize_kraft_digester(target_kappa, current_alkali_cost, current_wood_cost)`: Uses SciPy (`scipy.optimize.minimize`) to establish the cheapest operational point (temperature and alkali bounds) mathematically required to hit a specific Kappa number while considering linear yield drops.
+### Digester Optimization
+* `optimize_batch_kraft_digester(target_kappa, current_alkali_cost, current_wood_cost)`: Solves for optimal Active Alkali and Cook Temperature specifically bounded by Batch digester cycles and chemical economy.
+* `optimize_continuous_kamyr_digester(target_kappa, liquor_to_wood_ratio_cost_penalty)`: Balances the required Impregnation/Cooking Liquor-to-Wood (L/W) ratio against the penalty of having to evaporate that excess water later in the cycle.
+
+### Bleaching Sequence Solvers
+* `optimize_bleaching_sequence_cost(sequence_type, incoming_kappa, target_brightness, chemical_costs)`: Non-linear allocation to reach a target ISO Brightness. Dynamically shifts matrix between **ECF** (Chlorine Dioxide $+$ NaOH) and **TCF** (Ozone $+$ Hydrogen Peroxide) rulesets based on individual chemical pricing.
+
+### Chemical Recovery Control
+* `optimize_sulphite_base_recovery(target_so2_recovery, steam_cost_gj, makeup_chemical_cost)`: Balances the use of live steam in the evaporators (which drives up recovery boiler efficiency) against the physical cost of buying fresh Mg/Ca makeup chemicals for the Sulphite cycle.
