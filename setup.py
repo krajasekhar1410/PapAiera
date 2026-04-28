@@ -7,7 +7,7 @@ with open(os.path.join(os.path.dirname(__file__), 'README.md'), encoding='utf-8'
 
 setup(
     name="PapAiEra",
-    version="0.1.2",
+    version="0.1.3",
     description="A Python library for Pulp and Paper manufacturing processes, based on BREF (Best Available Techniques) standards.",
     long_description=long_description,
     long_description_content_type="text/markdown",
