@@ -3,3 +3,4 @@ from .water_energy import specific_water_consumption, specific_energy_consumptio
 from .management import ems_scorecard, calculate_total_solid_waste, material_efficiency
 from .air_emissions import total_reduced_sulphur, nox_emissions_factor, dust_emissions, so2_emissions_kg_adt
 from .wastewater import wwtp_removal_efficiency, specific_effluent_volume, nitrogen_phosphorus_discharge
+from .power_plant import boiler_thermal_efficiency, tg_extraction_efficiency

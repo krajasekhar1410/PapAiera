@@ -119,3 +119,82 @@ def optimize_sulphite_base_recovery(target_so2_recovery, steam_cost_gj, makeup_c
 
     res = minimize(objective, [10.0], bounds=[(8.0, 20.0)], constraints=[{'type': 'ineq', 'fun': recovery_constraint}])
     return {"steam_GJ_t": res.x[0], "minimized_cycle_cost": res.fun}
+
+# -----------------------------------------------------------------------------
+# 4. POWER GRID & TG (COGENERATION) OPTIMIZATION
+# -----------------------------------------------------------------------------
+
+def optimize_cogeneration_tg_fuel(steam_demand_mp, steam_demand_lp, purchased_power_price, fuel_cost_gj):
+    """
+    Optimizes the Turbine Generator (TG) extraction vs condensing mode.
+    If purchased power is expensive, the solver will push more steam to the condenser (generating MW).
+    If fuel is expensive, it extracts only the required MP/LP steam and minimizes firing.
+    Variables: x[0] = Total HP steam fired, x[1] = Steam to Condenser
+    """
+    def objective(x):
+        hp_steam, condenser_steam = x[0], x[1]
+        fuel_cost = hp_steam * fuel_cost_gj * 3.2 # approx energy conversion
+        # Assume 1 ton of condensed steam = 0.25 MWh generated
+        generated_mwh = condenser_steam * 0.25 + (steam_demand_mp * 0.1) + (steam_demand_lp * 0.15)
+        # We save money for every MW we don't have to buy
+        purchased_power_savings = generated_mwh * purchased_power_price
+        
+        return fuel_cost - purchased_power_savings
+
+    def mass_balance_constraint(x):
+        # HP Steam = MP + LP + Condenser
+        return x[0] - (steam_demand_mp + steam_demand_lp + x[1])
+
+    res = minimize(objective, [100.0, 20.0], bounds=((50, 300), (0, 100)), constraints=[{'type': 'eq', 'fun': mass_balance_constraint}])
+    return {"optimal_HP_firing_t": res.x[0], "optimal_condensing_t": res.x[1], "net_energy_cost": res.fun}
+
+# -----------------------------------------------------------------------------
+# 5. PAPER MACHINE STEAM & WET END CHEMISTRY
+# -----------------------------------------------------------------------------
+
+def optimize_machine_steam_consumption(machine_speed_mpm, basis_weight_gsm, steam_cost_t, press_power_cost_kw):
+    """
+    Finds the optimal balance between pressing the paper harder (costing electrical kW)
+    vs removing the water in the dryer section (costing thermal steam).
+    Variables: x[0] = Press section exit dryness %
+    """
+    def objective(x):
+        dryness = x[0]
+        # Electrical cost rises exponentially to get higher dryness out of the press
+        press_cost = ((dryness - 40.0) ** 2) * press_power_cost_kw
+        # Steam cost drops linearly the dryer the sheet is
+        water_to_evaporate = (100.0 - dryness) / dryness # kg water / kg fiber
+        steam_cost = water_to_evaporate * 1.3 * steam_cost_t * (basis_weight_gsm / 1000.0) * machine_speed_mpm
+        return press_cost + steam_cost
+
+    res = minimize(objective, [45.0], bounds=[(40.0, 55.0)])
+    return {"optimal_press_dryness": res.x[0], "minimized_drying_cost": res.fun}
+
+def optimize_wet_end_dosing(target_retention, target_sizing, chemical_prices):
+    """
+    Optimizes GPL dosing points for wet-end chemistry (Retention Aid / Polymer vs Coagulant / Alum vs Size / AKD).
+    Variables: x[0] = PAC/Alum dose (kg/t), x[1] = Polymer dose (g/t), x[2] = AKD dose (kg/t)
+    """
+    alum_price = chemical_prices.get('alum', 0.2)
+    poly_price = chemical_prices.get('polymer', 4.0)
+    akd_price = chemical_prices.get('akd', 2.5)
+
+    def objective(x):
+        return (x[0] * alum_price) + ((x[1]/1000.0) * poly_price) + (x[2] * akd_price)
+
+    def retention_constraint(x):
+        alum, poly, akd = x
+        # Polymer gives massive retention, alum helps neutralize charge allowing polymer to work
+        sim_retention = 50.0 + (alum * 2.0) + (poly * 0.15) - (akd * 0.5)
+        return sim_retention - target_retention
+
+    def sizing_constraint(x):
+        alum, poly, akd = x
+        # AKD gives sizing, retention aids help keep AKD in the sheet
+        sim_sizing = (akd * 10.0) + (poly * 0.05)
+        return sim_sizing - target_sizing
+
+    res = minimize(objective, [5.0, 150.0, 2.0], bounds=((0, 15), (50, 400), (0, 5)), 
+                   constraints=[{'type': 'ineq', 'fun': retention_constraint}, {'type': 'ineq', 'fun': sizing_constraint}])
+    return {"PAC_Alum_kg_t": res.x[0], "Polymer_g_t": res.x[1], "AKD_kg_t": res.x[2], "total_chem_cost": res.fun}
+
