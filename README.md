@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="docs/pap_ai_era_logo.png" width="200" alt="PapAiEra Logo">
+  <img src="https://raw.githubusercontent.com/krajasekhar1410/PapAiera/main/docs/pap_ai_era_logo.png" width="200" alt="PapAiEra Logo">
 </p>
 
 # PapAiEra
 
 <p align="center">
-  <img src="docs/pap_ai_era_banner.png" alt="PapAiEra Banner" width="100%">
+  <img src="https://raw.githubusercontent.com/krajasekhar1410/PapAiera/main/docs/pap_ai_era_banner.png" alt="PapAiEra Banner" width="100%">
 </p>
 
 **PapAiEra** is a specialized Python library engineered for the Pulp and Paper industry. It mathematically models and solves optimization problems based on the Best Available Techniques (BAT) reference documents (EU BREF 2015).
