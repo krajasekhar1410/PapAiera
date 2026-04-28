@@ -1,4 +1,12 @@
+<p align="center">
+  <img src="docs/pap_ai_era_logo.png" width="200" alt="PapAiEra Logo">
+</p>
+
 # PapAiEra
+
+<p align="center">
+  <img src="docs/pap_ai_era_banner.png" alt="PapAiEra Banner" width="100%">
+</p>
 
 **PapAiEra** is a specialized Python library engineered for the Pulp and Paper industry. It mathematically models and solves optimization problems based on the Best Available Techniques (BAT) reference documents (EU BREF 2015).
 
@@ -109,6 +117,38 @@ chemical_targets = suggest_furnish_dosing(
 )
 print(f"Suggested Alum Dose: {chemical_targets['suggested_PAC_Alum_kg_t']:.2f} kg/t")
 print(f"Warning Triggers: {chemical_targets['furnish_warnings']}")
+```
+
+### 5. Multi-Layer Machine Stage-Wise Moisture Prediction
+Simulates the entire water loss journey through the Wire formers, Press Nips, and condensing Steam Dryers.
+```python
+from pap_ai_era.papermaking.moisture_prediction import predict_wire_drainage_and_couch_moisture, predict_press_section_moisture, predict_dryer_group_moisture
+
+# Wire Drain
+couch = predict_wire_drainage_and_couch_moisture(
+    target_gsm=80, machine_speed_mpm=1200, wire_width_m=6.5,
+    layer_data=[{'gsm': 40}, {'gsm': 40}], # Multi-layer boosting drain efficiency
+    vacuum_boxes=[{'vacuum_kpa': 15}, {'vacuum_kpa': 35}, {'vacuum_kpa': 60}]
+)
+print(f"Moisture exiting Couch Roll: {couch['moisture_after_couch_pct']:.2f}%")
+
+# Press Dewatering
+presses = predict_press_section_moisture(
+    presses=[{'linear_load_kn_m': 60}, {'linear_load_kn_m': 90, 'shoe_press': True}],
+    inlet_moisture_pct=couch['moisture_after_couch_pct'],
+    machine_speed_mpm=1200
+)
+print(f"Moisture after 3rd Press: {presses['final_press_moisture_pct']:.2f}%")
+
+# Dryer Cylinder Extraction
+evap = predict_dryer_group_moisture(
+    dryer_groups=[{'cylinders': 12, 'steam_pressure_bar': 2.5}, {'cylinders': 16, 'steam_pressure_bar': 4.0}],
+    inlet_moisture_pct=presses['final_press_moisture_pct'],
+    target_gsm=80, 
+    machine_speed_mpm=1200, 
+    width_m=6.5
+)
+print(f"Final Reel Moisture: {evap['final_reel_moisture_pct']:.2f}%")
 ```
 
 ### 5. Bleaching Cost Sequencing (ECF)

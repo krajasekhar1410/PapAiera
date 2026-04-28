@@ -59,6 +59,11 @@ This document serves as the comprehensive list of all equations, calculations, a
 * `ash_retention_efficiency(headbox_ash_consistency, white_water_ash_consistency)`: Dedicated filler accounting.
 * `suggest_furnish_dosing(hardwood_pct, softwood_pct, broke_pct, target_akd_sizing)`: Heuristic dosing ratios dynamically balancing Hardwood surface fines and Broke anionic trash.
 
+### Moisture Prediction Models (`moisture_prediction.py`)
+* `predict_wire_drainage_and_couch_moisture(target_gsm, machine_speed_mpm, wire_width_m, layer_data, vacuum_boxes)`: Empirically predicts drainage capabilities based on linear vacuum strengths.
+* `predict_press_section_moisture(presses, inlet_moisture_pct, machine_speed_mpm)`: Nip dwell time linear load solver (incorporating Shoe Press configurations).
+* `predict_dryer_group_moisture(dryer_groups, inlet_moisture_pct, target_gsm, machine_speed_mpm, width_m)`: Heat transfer extraction converting operating bar steam pressure to cylinder latency exchange efficiency.
+
 ### Coating & Finishing (`coating.py`)
 * `coating_colour_loss(colour_to_effluent_kg, total_colour_applied_kg)`: Evaluates losses to the biological effluent system.
 * `coating_solids_recovery_efficiency(solids_recovered, solids_in_wash_water)`: E.g., Ultrafiltration station efficiency for recycling binders and pigments.
