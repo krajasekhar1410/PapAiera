@@ -111,6 +111,53 @@ print(f"Suggested Alum Dose: {chemical_targets['suggested_PAC_Alum_kg_t']:.2f} k
 print(f"Warning Triggers: {chemical_targets['furnish_warnings']}")
 ```
 
+### 5. Bleaching Cost Sequencing (ECF)
+Minimises total chemical cost subject to physical constraints (Target brightness and minimum viscosity drops) traversing dynamically through the D0, Eop, D1, and P stages.
+```python
+from pap_ai_era.core_simulations.lib_optimisation import bleach_objective_function
+
+params_dict = {
+    'price_ClO2': 1.20, 'price_NaOH': 0.40, 'price_H2O2': 0.80, # Costs
+    'D': {'k_D': 0.20, 'n_D': 0.90, 'B_max_D': 88, 'k_B_D': 0.05, 'k_v_D': 0.1},
+    'Eop': {'a_E': 10, 'b_E': 2.5, 'c_E': 1.5, 'd_E': 3.0},
+    'P': {'k_d': 0.01, 'B_max_P': 92, 'k_P': 0.08, 'k_v_P': 0.05, 'k_B_H2O2': 0.8}
+}
+
+result = bleach_objective_function(
+    chemical_doses=[12.0, 10.0, 3.0, 8.0, 4.0], 
+    kappa_0=30.0, 
+    B_target=88.0, 
+    visc_min=700.0, 
+    params_dict=params_dict
+)
+if result['success']:
+    print(f"Minimized Sequence Cost: ${result['cost_minimized']:.2f}")
+    print(f"Optimal Dosing Vectors [D0, Eop, pEop, D1, P]: {result['optimal_doses_kg_t']}")
+```
+
+### 6. Full Digester Kinetics Integration
+Numerically integrates Lignin dissolution, Carbohydrate peeling, and Effective Alkali consumption across specific chip time-temperature vectors using SciPy ODEs to predict exact blow Kappa.
+```python
+from pap_ai_era.core_simulations.lib_cook_module import cook_module
+
+inputs = {
+    'L0': 0.25, 'C0': 0.70, 'EA_conc': 45.0, 'LWR': 4.0, 'sulphidity': 30.0,
+    'T_profile': ([0, 30, 90, 150], [90, 150, 165, 165]) # Minutes vs Celsius T_vec
+}
+params = {
+    'kappa_factor': 6.57, 'kappa_bulk_thresh': 50, 'kappa_res_thresh': 20,
+    'alpha_L': 0.4, 'alpha_C': 0.15, 'k_C': 0.002, 'Ea_C': 130000,
+    'initial': {'A': 1e7, 'Ea': 100000, 'a': 0.5, 'b': 0.3},
+    'bulk': {'A': 3.2e10, 'Ea': 134000, 'a': 1.0, 'b': 0.4},
+    'residual': {'A': 1.8e8, 'Ea': 125000, 'a': 0.5, 'b': 0.3}
+}
+
+simulation = cook_module(inputs, params)
+print(f"Final Kappa Predict: {simulation['kappa_f']:.2f}")
+print(f"Final Estimated Yield: {simulation['Y']:.2f}%")
+print(f"Generated H-Factor: {simulation['H_f']:.1f}")
+```
+
 ---
 
 ## Example Optimization: The Continuous Digester Bottleneck
