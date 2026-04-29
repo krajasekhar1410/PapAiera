@@ -110,3 +110,47 @@ This document serves as the comprehensive list of all equations, calculations, a
 
 ### Chemical Recovery Control
 * `optimize_sulphite_base_recovery(target_so2_recovery, steam_cost_gj, makeup_chemical_cost)`: Balances the use of live steam in the evaporators (which drives up recovery boiler efficiency) against the physical cost of buying fresh Mg/Ca makeup chemicals for the Sulphite cycle.
+
+---
+
+## 5. Supplementary Papermaking Formulas (`pap_ai_era.papermaking.formulas`)
+
+### Stock Preparation
+* `calculate_npsh(p_atm, p_vapor, density, h_friction, z_height)`: Net positive suction head.
+* `jet_mixer_entrainment(q_o, distance, nozzle_diameter)`: Jet mixer entrained volume.
+* `krofta_save_all_volume(radius, height)`: Volume of Krofta save-all.
+* `save_all_fiber_loss(fiber_in_effluent_kg_min, operating_days)`: Fiber loss in mt/year.
+* `stock_pump_throughput(capacity_l_min, consistency_pct)`: Throughput in kg/min.
+* `refining_specific_edge_load(p_total_kw, p_no_load_kw, cutting_length_km_sec)`: Specific Edge Load (SEL).
+* `refining_specific_energy(p_net_kw, throughput_t_h)`: Specific energy in kWh/t.
+
+### Wet End & Headbox
+* `reynolds_number(diameter, velocity, kinematic_viscosity)`: Fluid flow Reynolds number.
+* `water_per_ton_of_pulp(consistency_pct)`: Water ratio per ton.
+* `drainage_index(b_constant, c_md_count, air_permeability_cfm)`: Drainage Index (DI).
+* `fiber_support_index(a_constant, b_constant, m_cd_mesh, c_md_count)`: Fiber Support Index (FSI).
+* `spouting_velocity(head_ft)` / `spouting_velocity_m_s(head_m)`: Spouting velocity.
+* `wire_shake_number(frequency_strokes_min, amplitude_inch, wire_speed_fpm)`: Fourdrinier shake number.
+* `dandy_roll_speed(wire_speed_fpm, roll_diameter_ft)`: Dandy roll RPM.
+* `drag_load_conventional(drive_volts, drive_amps, nominal_fabric_speed_fpm, fabric_width_in)`: Drag load.
+* `basis_weight_from_slice(slice_opening_mm, headbox_consistency_pct)`: GSM estimation from headbox.
+
+### Press Section & Uhle Box Sizing
+* `press_nip_width(compression_cm, roll_1_radius_cm, roll_2_radius_cm)`: Nip width (2b) in cm.
+* `crown_correction(nip_ends, nip_center, d1, d2)`: Change in total crown of two rolls.
+* `press_impulse(press_line_load_kn_m, nip_speed_m_min)`: Press impulse.
+* `uhle_box_dwell_time(slot_width_mm, machine_speed_mpm)`: Dwell time over Uhle Box.
+* `vacuum_capacity_per_slot(slot_area_m2, avg_vacuum_factor)`: Vacuum capacity in m3/min.
+
+### Dryer Section
+* `drying_rate(machine_speed_mpm, basis_weight_kg_m2, water_evap_ratio, n_cylinders, diameter_m)`: Drying rate (Rw) in kg/h-m2.
+* `rimming_speed(diameter_ft, condensate_film_thickness_ft)`: Rimming speed for dryers.
+* `paper_web_draw(speed_initial, speed_final)`: Percent draw between sections.
+* `paper_caliper_mm(basis_weight_gsm, density_kg_m3)`: Paper caliper in mm.
+* `roll_rotational_speed(speed_mpm, roll_diameter_m)`: Roll RPM.
+
+### Mass Balance Equations
+* `headbox_consistency_mass_balance(thick_stock_cons, thick_stock_flow, thin_stock_flow, dil_water_cons)`: Thin stock consistency.
+* `basis_weight_mass_balance(thick_stock_flow, thick_stock_cons, slice_width, wire_speed, retention_ratio)`: Basis weight G based on volume balance.
+* `overall_retention_from_consistencies(headbox_cons, white_water_cons)`: Retention ratio (R).
+* `total_stock_volume(thick_stock_flow, thin_stock_flow, recirculation_constant)`: Volume balance of stock.
