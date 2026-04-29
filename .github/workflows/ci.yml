@@ -33,10 +33,7 @@ jobs:
       - name: Run basic sanity test (import package)
         run: |
           pip install dist/*.whl
-          python - <<PY
-          import pap_ai_era
-          print('Package import successful, version:', pap_ai_era.__version__)
-          PY
+          python -c "import pap_ai_era; print('Package import successful, version:', pap_ai_era.__version__)"
 
       # Publish to PyPI on tag pushes only
       - name: Publish to PyPI
