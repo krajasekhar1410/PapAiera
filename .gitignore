@@ -16,6 +16,10 @@ env/
 ENV/
 env.bak/
 venv.bak/
+test_env/
 
 # Project specific files (do not commit large PDF text)
 PP_revised_BREF_2015.pdf
+pdf_contents*.txt
+read_pdfs.py
+test_import.py

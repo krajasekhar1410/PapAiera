@@ -3,7 +3,7 @@ PapAiEra: Pulp and Paper Industry Optimization Library
 Following Best Available Techniques (BAT) BREF 2015 standards.
 """
 
-__version__ = "0.1.13"
+__version__ = "0.2.0"
 from . import pulping
 from . import papermaking
 from . import sustainability
