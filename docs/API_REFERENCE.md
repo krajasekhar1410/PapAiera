@@ -1,4 +1,7 @@
 # PapAiEra API Reference
+
+**PyPI URL**: [https://pypi.org/project/PapAiEra/](https://pypi.org/project/PapAiEra/) | **Install**: `pip install PapAiEra`
+
 This document serves as the comprehensive list of all equations, calculations, and functions available in the PapAiEra library, based on the EU BREF 2015 Best Available Techniques (BAT) standards.
 
 ## 1. Pulping Modules (`pap_ai_era.pulping`)

@@ -4,9 +4,15 @@
 
 # PapAiEra
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/krajasekhar1410/PapAiera/main/docs/pap_ai_era_banner.png" alt="PapAiEra Banner" width="100%">
-</p>
+[![PyPI version](https://img.shields.io/pypi/v/PapAiEra.svg)](https://pypi.org/project/PapAiEra/)
+[![Python versions](https://img.shields.io/pypi/pyversions/PapAiEra.svg)](https://pypi.org/project/PapAiEra/)
+
+**PyPI Project URL**: [https://pypi.org/project/PapAiEra/](https://pypi.org/project/PapAiEra/)
+
+## Installation
+```bash
+pip install PapAiEra
+```
 
 **PapAiEra** is a specialized Python library engineered for the Pulp and Paper industry. It mathematically models and solves optimization problems based on the Best Available Techniques (BAT) reference documents (EU BREF 2015).
 
