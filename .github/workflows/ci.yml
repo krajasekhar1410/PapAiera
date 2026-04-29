@@ -3,6 +3,7 @@ name: CI Publish
 on:
   push:
     branches: [ main ]
+    tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
 
@@ -11,7 +12,7 @@ jobs:
     runs-on: windows-latest
     defaults:
       run:
-        shell: pwsh
+        shell: bash
     environment: pypi
     steps:
       - name: Checkout repository
@@ -44,7 +45,7 @@ jobs:
         run: |
           python -m twine upload dist/*
 
-      # Optional: Lint with flake8 (no extra deps needed if you add it)
+      # Optional: Lint with flake8
       - name: Lint with flake8
         run: |
           pip install flake8
