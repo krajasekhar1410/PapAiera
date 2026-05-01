@@ -29,6 +29,7 @@ The library covers a massive array of metrics across the entire pulp and paper p
 * **Recycled Fibre (`recycled.py`)**: Deinking yield, fiber loss, rejects rates.
 * **Non-Wood (`non_wood.py`)**: Depithing efficiency, silica load checks (crucial for bagasse).
 * **Bleaching Engine (`bleaching/`)**: Universal, input-driven bleaching sequence optimizer.
+* **Boiler Optimizer (`energy/`)**: Physics-aware Digital Twin and efficiency optimizer.
 * **Recovery Cycle (`recovery_cycle.py`)**: Causticizing efficiency, evaporator steam economy, lime kiln energy.
 
 ### 2. Papermaking Modules (`pap_ai_era.papermaking`)
@@ -100,6 +101,25 @@ vpa_report = compute_vpa(data, process_average=50.0)
 
 print(f"Total 2-Sigma Variability: {vpa_report.normalised['TOT']:.2f}%")
 print(f"Primary Problem Detected: {vpa_report.primary_problem}")
+```
+
+### 🔥 Universal Boiler Optimizer
+A physics-aware **Boiler Digital Twin** that uses hybrid modeling to maximize thermal efficiency while staying within safety and emission constraints.
+
+**Key Features:**
+- **Hybrid Modeling**: Combines first-principles energy balance with ML residuals.
+- **Efficiency Maximization**: Finds the sweet spot for fuel/air ratios to minimize stack loss and unburnt fuel.
+- **Constraint Safety**: Automatically respects limits for O2%, steam pressure, and flue gas temperature.
+
+```python
+from pap_ai_era.energy.boiler_optimizer import Boiler, BoilerOptimizer
+
+config = {"boiler_type": "AFBC", "fuel": {"CV": 4200}}
+boiler = Boiler(config)
+optimizer = BoilerOptimizer(boiler)
+
+# Optimize for maximum efficiency
+result = optimizer.optimize(disturbances={"feedwater_temp": 110})
 ```
 
 ### ⚙️ Kraft Digester Vroom H-Factor

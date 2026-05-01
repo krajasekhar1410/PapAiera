@@ -49,6 +49,12 @@ The new bleaching engine provides a universal optimization framework.
 * `theoretical_aox_generation(active_chlorine_multiple, kappa_to_bleach)`: Empirical determination of generated kg AOX based on ClO2 charge.
 * `wash_press_efficiency(dissolved_solids_in, dissolved_solids_out)`: Brown stock washer displacement ratio preventing COD carry-over.
 
+### Boiler Optimizer (`pap_ai_era.energy`)
+The boiler optimizer provides a Digital Twin framework for efficiency control.
+* `Boiler(config)`: Digital Twin class for a specific boiler type and fuel.
+* `BoilerState(fuel, air, fw_temp, ...)`: Class representing a physical state.
+* `BoilerOptimizer(boiler)`: Engine to find optimal setpoints (fuel/air) for max efficiency.
+
 ### Chemical Recovery Cycle (`recovery_cycle.py`)
 * `causticizing_efficiency(naoh_conc, na2co3_conc)`: Efficiency of converting Green liquor to White liquor in the causticizing plant.
 * `lime_kiln_specific_energy(fuel_energy_gj, lime_produced_tonnes)`: Checks if fuel usage stays between 5.5 and 7.5 GJ/t CaO.
