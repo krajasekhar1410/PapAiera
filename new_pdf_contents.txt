@@ -1,0 +1,3267 @@
+--- 2019J6_Rippon_IECR.pdf ---
+Page 1:
+Machine Direction Adaptive Control on a
+Paper Machine
+Lee D. Rippon, ∗,† Qiugang Lu, † Michael G. Forbes, ‡ R. Bhushan Gopaluni, ∗,†
+Philip D. Loewen, ¶ and Johan U. Backström ‡
+†Department of Chemical and Biological Engineering, The University of British Columbia,
+Vancouver, BC, Canada.
+‡Honeywell Process Solutions, 500 Brooksbank Ave, North Vancouver, BC, Canada.
+¶Department of Mathematics, The University of British Columbia, Vancouver, BC,
+Canada.
+E-mail: leeripp@chbe.ubc.ca; bhushan.gopaluni@ubc.ca
+Abstract
+Control of industrial sheet and ﬁlm processes involves separate controllers and ac-
+tuators for minimizing both temporal variations along the machine direction (MD) and
+spatial variations along the cross direction (CD). Model-based control methods such
+as model predictive control (MPC) have gained widespread implementation for con-
+trolling both the MD and CD processes. One limitation of model-based methods is
+that changes in the true process pose signiﬁcant identiﬁcation challenges for operators
+which are often resolved with costly open loop identiﬁcation experiments. The pre-
+dominant industrial measurement technology acquires a signal of mixed MD and CD
+variations that requires separation. This work compares various model-free approaches
+for MD-CD separation as a prerequisite to eﬀective MD control. To address the chal-
+lenges of model-based control this paper introduces an adaptive control method for the
+1
+Page 2:
+MD process. Closed loop identiﬁcation experiments are conducted and compared to
+benchmarks on an industrial paper machine simulator.
+Keywords: papermaking, model-based control, model-plant mismatch detection, input
+design, system identiﬁcation, adaptive control
+Introduction
+Improved sheet, web and ﬁlm property estimation is motivated by the ongoing desire for
+higher quality, more consistent products and the constant desire for maximum production
+eﬃciency. Collectively, sheet and ﬁlm processes such as paper making, metal rolling, coating
+and polymer ﬁlm extrusion constitute a vast global market. As such, improving the opera-
+tional eﬃciency and control of sheet and ﬁlm processes is of signiﬁcant industrial importance.
+Sheet and ﬁlm processes are similar in that property variations are minimized along both
+the length and the width of the sheet, also known as the machine direction (MD) and the
+cross direction (CD), respectively1. Moreover, outputs are often measured by a scanning
+sensor that traverses the moving sheet and samples a mixture of MD and CD variation.2,3
+To consider the practical industrial complexities, this work focuses on an application with
+a paper machine. It is important to note that this work is relevant to all sheet and ﬁlm
+processes involving a scanning sensor and a model-based control system.
+A Fourdrinier paper machine, as shown in Figure 1, consists of a series of dewatering
+and pressing operations that transform a slurry of pulp ﬁber into a uniform sheet of paper.
+These complex and expensive machines can be over 100 m long in the MD and produce a
+sheet of paper over 10 m wide at rates exceeding 30 m/s.4 In the forming section the pulp
+ﬁber ﬂows from the thick stock pump to the headbox where it is diluted and sprayed through
+a slice lip onto a moving wire or felt. In the pressing and drying sections the wet sheet of
+ﬁber is compressed and dried by passing through a series of metal rollers, some of which are
+heated with high pressure steam. Finally, the sheet is smoothed into a ﬁnal product before
+2
+Page 3:
+collecting on a reel at the end of the machine.5
+Cross direction
+Scanning sensors
+Machine direction
+Forming Pressing Drying Calendaring
+Figure 1: Schematic of a Fourdrinier paper machine (adapted with permission from6)
+The objective in paper-making, from a quality control perspective, is to eﬃciently pro-
+duce a uniform sheet of paper with consistent properties that match customer speciﬁcations.
+Dedicated MD and CD control systems are used to address temporal and spatial variations,
+respectively. To minimize temporal variations MD actuators (e.g., thick stock valve posi-
+tioning and dryer steam pressure) are used as they have a relatively uniform eﬀect on the
+spatial properties of the sheet.7 Spatial variations are minimized by manipulating spatially
+distributed CD actuators such as headbox dilution valves and induction proﬁlers.8
+To implement feedback control the MD and CD controllers require measured output
+proﬁles which are typically acquired using a scanning sensor. Due to the diagonal sampling
+trajectory the resulting signal acquired by the scanner contains a mixture of MD and CD
+property variations. From this signal, separate MD trends and CD proﬁles need to be
+determined and provided to the MD and CD control systems, respectively. The process of
+generating these separate controller inputs is referred to as MD-CD separation. One of the
+more challenging aspects of MD-CD separation that has yet to be suﬃciently addressed is
+the presence of MD variations aliasing into the CD proﬁle, i.e., MD aliasing. The procedure
+of MD-CD separation is a prerequisite not only for model-based feedback control, but also
+for performance monitoring and system identiﬁcation. The use of MPC for MD control has
+become increasingly popular since it was introduced by Honeywell in 1994.9 Maintaining an
+accurate model of the process while the true plant changes according to the varying operating
+3
+Page 4:
+conditions and physical characteristics is a problem of signiﬁcant industrial interest.
+This paper addresses two fundamental challenges of sheet and ﬁlm process control with
+a traversing scanning sensor. Firstly, the MD-CD separation problem is introduced and a
+literature review is conducted to assess previous eﬀorts. A set of model-free MD-CD sep-
+aration techniques are selected for comparative analysis due to their practical appeal and
+ﬂexibility. A novel technique based on compressive sensing (CS) is developed for implemen-
+tation with a scanning sensor and a study with multiple scanners is presented. The results of
+the MD-CD separation have a direct impact on the second fundamental challenge addressed
+here, i.e., adapting the MD process model used by the MD MPC control system. Novel
+developments towards process monitoring (PM), input design (ID) and system identiﬁcation
+(SI) are uniﬁed into an adaptive control framework. Integrated case studies are conducted
+to demonstrate the eﬀectiveness of the uniﬁed adaptive control algorithm and compare with
+alternative identiﬁcation techniques.
+MD-CD separation
+The comparative study of MD-CD separation methods conducted in this work centers around
+the problem of MD aliasing. As such, this section begins with some background material
+to introduce the practical industrial constraints. Afterwards, the ﬁndings of a thorough
+literature review on MD-CD separation methods is presented which motivates the selection
+of the candidate model-free methods for comparative analysis. These techniques, namely
+exponential ﬁltering (EF), power spectral analysis (PSA) and CS, are introduced in greater
+detail with CS in particular being developed for implementation with a scanning sensor. The
+results of the comparative analysis are presented and a novel study into CS with multiple
+scanners is provided. Commentary on the relevance and importance of accurate MD-CD
+separation for adaptive MD control is provided before introducing the proposed adaptive
+control framework.
+4
+Page 5:
+Background
+Scanning sensors were ﬁrst introduced around 1980 when they began to replace the single-
+point sensors which had a ﬁxed CD position.10 The scanning sensor framework (as shown in
+Figure 2 below) consists of a scanner head mounted on a frame that spans the width of the
+sheet. The scanner head is ﬁlled with a variety of sensors that can measure sheet properties
+such as basis weight, moisture content, and caliper (i.e., thickness).11,12 Some paper machines
+use scanning sensors at diﬀerent locations as in Figure 1. One approach to address MD-
+CD separation is to use an array of stationary sensors that span the width of the sheet.
+However the cost of such a sensor array is generally prohibitive due to the expensive sensor
+technology.13 Until sheet spanning sensing mechanisms become commonplace in industry,
+the problem of MD-CD separation with a scanning sensor conﬁguration remains relevant.14
+MD
+CD
+ϴ
+vsheet
+vscan
+Sampling 
+Trajectory
+Scanner 
+Frame
+Scanner 
+Head
+Figure 2: Schematic of a scanning sensor
+The resulting sampling trajectory is described by the dotted red line in Figure 2 although
+in reality, the angleθ from the sampling trajectory to the MD axis is much smaller, typically
+θ ≈ 1°. Speciﬁcally, θ can be roughly calculated as follows:15
+θ = 90 −arctan(vsheet
+tscan
+wsheet
+), (1)
+where tscan is the the time required for a single traverse of the sheet,vsheet is the MD speed
+of the sheet andwsheet is the width of the sheet. It is worth noting that equation 1 ignores
+occasional stationary periods for sensor calibration and assumes a constant scan speed.
+5
+Page 6:
+The acquired scanner signal,y ∈ Rm, needs to be processed such that it represents the
+two dimensional reality of the process, i.e.,Y ∈ RnB×nS. Here m is equal to the number
+of measurements taken by the scanning sensor,nB is the number of evenly spaced CD bins
+and nS is equal to the number of MD scans. Each time the scanner traverses the moving
+sheet of paper is considered one scan, during which up to 10,000 locations along the CD
+proﬁle can be sampled.2 These measurements are down-sampled into evenly spaced CD bins
+at a lower common resolution (e.g., 500 bins) that is more computationally tractable for the
+model-based control systems.16 To achieveRm ↦→ RnB×nS the measurements of each scan are
+collapsed into a column vector as shown by matrixY in Table 1.
+Table 1: Two-dimensional representation of scanner signal
+Scans ← MD →
+Scan 1 · · · Scan j · · · Scan nS
+Bins Bin 1 Y, · · · Y,j · · · Y,nS
+... ... ... ... ... ...
+↑ Bin i Yi, · · · Yi,j · · · Yi,nS
+CD ... ... ... ... ... ...
+↓ Bin nB YnB, · · · YnB,j · · · YnB,nS
+The sheet property matrixY can be decomposed as follows:
+Y = ¯YMD + ¯YCD + YR, (2)
+where ¯YMD, ¯YCD and YR represent data associated with MD variations, CD variations and
+residual variations, respectively.17 More speciﬁcally, if the average of all data points across
+scan j is
+¯Y MD
+j = 1
+nB
+nB∑
+i=
+Yi,j (3)
+then
+¯YMD = q
+[
+¯Y MD
+ · · · ¯Y MD
+nS
+]
+, (4)
+where q is a column vector of lengthnB ﬁlled with all ones. In other words, the values along
+6
+Page 7:
+the rows of a speciﬁc column of¯YMD are ﬁxed to the scan average and the matrix has a ﬂat
+CD proﬁle. Therefore, when Y − ¯YMD is computed it is equivalent to removing the scan
+average from every data point along that particular scan, i.e., removing the MD variations.
+The deﬁnition of ¯YCD follows analogously with values along a particular row being ﬁxed as
+the average over all scans resulting in a ﬂat MD proﬁle.
+This treatment of scanner data ignores the geometry of the sampling trajectory. While
+the rows correctly represent the approximate spatial positioning of each measurement, the
+columns treat the temporal positioning of each measurement during a scan as if the sheet
+was stationary. For control purposes the MD trend is often determined by simply taking the
+average of each scan and ignoring the MD variations observed within the scan.8 Subsequent
+scans are averaged or temporal ﬁltering is applied to obtain the CD control proﬁle. Ignoring
+the intra-scan MD position signiﬁcantly limits the resolution of the MD trend and thus limits
+the information provided to the MD controller as well as any MD performance monitoring
+andsystemidentiﬁcationalgorithms. Alternatively, theproposedMD-CDseparationmethod
+uses CS to incorporate a priori knowledge of the sampling geometry to generate a more
+informative MD trend. Speciﬁcally, the CS method accounts for both the MD and CD
+positions of each measurement to eﬀectively reconstruct a high resolution sheet estimate.
+The increased resolution of the MD trend provides direct beneﬁts to the adaptive control
+framework with regards to early upset detection, improved performance monitoring and
+additional data for better system identiﬁcation.
+To show the eﬀects of MD aliasing the following simplifying assumptions are made:
+Assumption 1.The scanner traverses the moving sheet at a constant and equivalent speed
+in both directions.
+Assumption 2.The scanner reverses exactly at the edges of the sheet.
+Assumption 3.The CD proﬁle is independent of time.
+Although variable rate scanning has drawn recent interest it is still common in many ap-
+plications for Assumption 1 to be true for extended periods of time. Ignoring occasional
+7
+Page 8:
+calibration periods the scanner trajectory is reasonably approximated by Assumption 2.
+While Assumption 3 is not technically correct, it is true for the vast majority of CD vari-
+ability over short periods of time.18 Controllable MD and CD frequencies can be determined
+to establish a lower bound on the required resolution for MD-CD separation methods. The
+highest cutoﬀ frequency for MD control loops is for the headbox total head at around 0.05
+Hz. 19 The CD actuators may have up to 300 individual actuators and the actuator spacing
+(for a slice lip system) is from 7.0 cm to 20 cm with a bandwidth of around 15 cm.9,20
+According to the assumptions described above, the raw scanner data forms an even,
+periodic function with respect to the CD variations. Each time the scanner completes two
+scans back and forth across the sheet represents one period, i.e., (2tscan). If one were to take
+the Fourier transform of the scanner signal time series, the CD variations would contribute
+to coeﬃcients at integer multiples of (2tscan)−1. Consequently, aliasing of MD variations in
+the CD proﬁle is most severe when the frequency of the MD variations occur at integer
+multiples of (2tscan)−1. 21 The eﬀect of MD aliasing is apparent in Figure 3 by comparing the
+true CD proﬁle (green) to the observed proﬁle (red). By attempting to mitigate ﬁctitious
+CD variations the CD control system could introduce new disturbances to the detriment of
+product quality. In some cases, averaging or temporal ﬁltering can successfully reduce the
+eﬀect of MD aliasing, however this compromises proﬁle resolution and controller response.14
+Methods for MD-CD separation
+Early developments in MD-CD separation focus on modeling the process outputs such as
+basis weight and moisture. A nonlinear MD moisture model was proposed in 1986 and a
+dual Kalman ﬁlter was introduced in 1988.3,22 In 1993 the moisture model was extended to
+the CD and consolidated with a basis weight model before testing with both simulated and
+industrial data.5,7,8 Although the tests presented are encouraging, these model-based MD-
+CD separation methods have not gained widespread industrial implementation. This is likely
+8
+Page 9:
+Figure 3: Four scans with MD variation at frequency 1/(2tscan)
+because model based methods rely on speciﬁcation of parameters that are machine speciﬁc,
+vary with operating conditions and must meet restrictive constraints to ensure convergence.
+Subsequent work in MD-CD separation introduces wavelet basis functions to successfully
+compress industrial data.23 Early eﬀorts failed to recognize the geometry of the scanner
+but in 2004 a technique was developed that considers the sampling geometry and applies
+the generalized sampling theorem to reconstruct MD and CD proﬁles. However, a non-
+causal ﬁlter is required that depends on the use of both past and future data.1 A causal
+approximation of the non-causal ﬁlter is proposed and combined with recursive wavelet
+denoising to estimate MD and CD proﬁles but the problem of MD aliasing is not addressed.4
+In 2005 explicit attention is provided to MD aliasing.21 Similarly, in 2008 a discrete cosine
+transform (DCT) technique uses the fact that CD variations form an even periodic function
+in the time domain as a means to conduct MD-CD separation. This technique is compared to
+wavelet and EF methods where it is shown through simulations to have better performance.24
+Unfortunately this DCT technique does not distinguish between MD and CD variations that
+occur at integer multiples of (2tscan)-1 and thus does not address severe MD aliasing.
+Recent attempts to address MD aliasing have explored the use of variable speed scanning
+to minimize the impact of MD variations leaking into the CD proﬁle. It is shown that if
+9
+Page 10:
+the CD proﬁle does not have any fast variations the support of the MD frequency compo-
+nents shift if the scan speed shifts.11 In 2011 PSA with a fast Fourier transform (FFT) is
+introduced to improve variance partitioning.25 A formal procedure for using PSA with two
+diﬀerent scan speeds for MD-CD separation was patented by ABB in 2012.26 The beneﬁts
+of variable speed scanning for observing a spectral frequency shift in the MD components
+are conﬁrmed by researchers with Metso.14 In 2011 the concept of using CS for MD-CD sep-
+aration was introduced with promising initial results but implementation with the practical
+constraints of a scanning sensor was not considered.27 This work extends the CS technique
+for implementation with a traversing scanning sensor and provides a comparative analysis
+with the PSA method and the longstanding industrially dominant EF method.
+Exponential ﬁltering
+InEFtheaverageofeachscanisstoredinavector, ¯Y MD, togenerateatrendofmeasurements
+for the MD control system. The CD proﬁle is calculated as a weighted average of current
+and past values across each CD bin by passing through an exponential ﬁlter, i.e.,
+Y CD,f
+i,j = α(Yi,j − ¯Y MD
+j ) + (1 − α)Y CD,f
+i,j−. (5)
+Here, Y CD,f
+i,j is the ﬁltered value for CD position i and MD position j. For EF the scan
+average is subtracted from the measured value at each CD bin position and multiplied by
+the ﬁlter factor, α ∈ [0,1] which typically has a nominal value of 0.33.4,15 The eﬀect of EF
+with α = 0.33 is compared at the second, fortieth and eightieth scans as shown in Figure 4.
+By the eightieth scan the ﬁltered proﬁle is signiﬁcantly less biased.
+Power spectral analysis
+By comparing the FFT of two consecutive scans at alternating scan speeds and observing the
+shift in the support of the spectral contents, dominant MD frequencies can be distinguished
+10
+Page 11:
+Figure 4: Exponential ﬁltering after 2, 40 and 80 scans
+from dominant CD frequencies.26 To demonstrate the use of PSA for MD-CD separation,
+consider scanning a sheet of paper with a single dominant MD frequency and a single dom-
+inant CD frequency at alternating speeds. The top proﬁle in Figure 5 shows the magnitude
+of the spectral content with respect to the spatial frequency whereas the bottom proﬁle
+shows this spectral content plotted with respect to the temporal frequency. In the top plot
+Figure 5: Spectral content of scans at diﬀerent scan speeds
+the dominant frequencies along each scan align at the frequency of the CD variation (0.5
+11
+Page 12:
+m−1) whereas in the bottom plot they align at the frequency of the MD variation (0.1 Hz).
+This shift in the spectral content provides the basis for which MD-CD separation can be
+conducted with PSA as described in Algorithm 1.
+Algorithm 1Power spectral analysis for MD-CD separation
+Input: Two consecutive scansy, y at alternating scans speeds.
+Output: MD trends yMD
+ , yMD
+ and CD proﬁlesyCD
+ , yCD
+
+for each scando
+Take x = FFT(y) and |x|
+Set a threshold asT = c ·mean(|x|) and set values of|x| ≤ T to zero
+Find support of remaining nonzero coeﬃcients
+Create separate spatial and temporal frequency supports
+end for
+for spatial and temporal frequency supportsdo
+Find and store supports on consecutive scans that intersect
+Set values ofx below noise threshold (T = c ·mean(|x|)) to zero
+Set values ofx at intersecting supports to zero
+Reconstruct yMD = IFFT(x) if intersecting spatial supports were removed
+Reconstruct yCD = IFFT(x) if intersecting temporal supports were removed
+end for
+Compressive sensing
+Shannon’s theorem states that for one to reconstruct a signal without error, the sampling
+rate must be at least twice the maximum frequency in the signal (i.e., the Nyquist rate).28,29
+Although signals such as paper sheet variations may not have natural bandlimits, low-pass
+ﬁlters are often used to bandlimit these signals so Shannon’s theorem still plays a role. With
+CS, so long as certain conditions pertaining to sparsity, incoherence and the restricted isom-
+etry property (RIP) are met, the signal can be perfectly reconstructed with high probability
+using less samples than is required by the Nyquist rate.30 In what follows the CS theory is
+ﬁrst presented, followed by a summary of previous work using CS for MD-CD separation
+and ﬁnally the proposed technique for applying CS with a scanning sensor is presented.
+Recall the matrix Y ∈ RnB×nS of scanner signal data withnB rows where nB is equal
+to the number of CD bins andnS columns where nS is equal to the number of MD scans.
+The vector form y = vec(Y) with y ∈ Rm where m = nB × nS represents the values from
+12
+Page 13:
+each scan stacked upon one another. With CS the matrix of the estimated paper sheet is
+F ∈ RnCD×nM D with nCD rows where nCD is the desired CD resolution of the estimated
+sheet (in this work nCD = nB). The number of columns nMD represents the desired MD
+resolutionofthereconstructionsuchthat nMD ≫ nS. Theestimatedsheetproﬁleisoriginally
+reconstructed in vector formf = vec(F) with f ∈ Rn where n = nCD × nMD and n ≫ m.
+Sparsity refers to the number of non-zero coeﬃcients a signal has in a given representation
+(or sparsifying) basis, Ψ. Sparse signals can be compressed and reconstructed accurately
+while storing few non-zero values. A signal,f, is consideredS-sparse in the representation
+basis Ψifthe coeﬃcientsequence x ∈ Rn has S ≪ nnon-zerovaluesand f = Ψx. 28 Consider
+the representation basis Ψ ∈ Rn×n as an orthonormal basis (e.g., Fourier basis or wavelet
+basis) that provides a sparse representation off. A set of basis functions,Ψ, are orthogonal
+over the interval[a, b] with respect to the weighting functionw(z) if for i ̸= j
+∫ b
+a
+ψi(z)ψj(z)w(z)dz = 0. (6)
+However, in the case wherei = j, the scalar product of the two vectors does not vanish, i.e.,
+∫ b
+a
+ψ2
+i (z)w(z)dz = N 2
+i . (7)
+Now if the set of basis functions,Ψ, is normalized such that eachψi(z) is multiplied byN−1
+i
+then the resulting set of basis functions will satisfy
+∫ b
+a
+ψi(z)ψj(z)w(z)dz = δij ≡
+
+
+
+0, for i ̸= j
+1, for i = j
+(8)
+where δij is the Kronecker delta. A set of basis functions satisfying equation 8 are consid-
+ered orthonormal basis functions, i.e., both orthogonal and unit normalized31. 32 A set of
+orthogonal functions is complete if a piece-wise continuous function,f(z) for z ∈ [a, b], can
+13
+Page 14:
+be represented by the series
+f(z) =
+∞∑
+n=
+xnψn(z) (9)
+such that the limit of the integrated squared error vanishes,31 i.e.,
+lim
+m→∞
+∫ b
+a
+[
+f(z) −
+m∑
+n=
+xnψn(z)
+]2
+w(z)dz = 0. (10)
+From equation 10 it is apparent that orthogonal completeness is an important property for
+ensuring the accuracy of the approximation off(z). In fact this property is critical for both
+spectral analysis and compressive sensing as it allows the functionf(z) to be written directly
+in the orthogonal basis, i.e.,
+f(z) =
+∞∑
+n=
+⟨f, ψn⟩ψn(z). (11)
+Another condition of CS, referred to as coherence, relates to the projection matrix,Φ ∈
+Rn×n. The projection matrix describes how samples are taken from the signal domain, i.e.,
+y = RΦf + ν, (12)
+where R ∈ Rm×n is the measurement matrix that contains the sampling coordinates and
+ν represents additive noise that corrupts the measured datay. The measurement matrix
+contains information regarding the geometry of the scanner trajectory. The measured signal
+canbeexpressedintermsoftherepresentationbasiscoeﬃcientsequencebyinserting f = Ψx
+into equation 12 to obtain
+y = RΦΨx + ν = Ax + ν, (13)
+where A ∈ Rm×n is referred to as the compressive sensing matrix.
+Compressive sensing is concerned with minimizing the coherence, µ, of the sampling
+14
+Page 15:
+which is determined by the maximum correlation betweenΦ and Ψ as
+µ(Φ, Ψ) = √n max
+1≤i,j≤n
+|⟨φi, ψj⟩|. (14)
+If Φ and Ψ are orthonormal bases thenµ(Φ, Ψ) ∈ [1, √n]. For CS it is desirable to select
+incoherent basis pairs forΦ and Ψ as this reduces the number of measurements required for
+accurate reconstruction. An example of a low coherence pair is the identity or spike basis as
+the projection matrix (Φ) and the Fourier basis as a representation matrix (Ψ) since spikes
+and sinusoids are maximally incoherent (i.e.,µ = 1). 30,33 The importance of sparsity and low
+coherence is shown in the following formula where the probability of exact reconstruction
+exceeds 1 − δ if
+m ≥ Cµ 2(Φ, Ψ)Slog(n/δ). (15)
+Formaximallyincoherentprojectionandrepresentationbasesthenumberofsamplesrequired
+for exact reconstruction is on the order ofSlog(n).
+To guarantee eﬃcient and robust reconstruction it is desirable to satisfy the restricted
+isometry property (RIP). The CS matrixA is loosely said to obey the RIP ifδS, the smallest
+number such that
+(1 − δS)||x||
+ ≤ ||Ax||
+ ≤ (1 + δS)||x||
+ (16)
+is not too close to one.30 While the RIP is NP-hard to verify it is often satisﬁed by taking a
+suﬃcient number of samples for a given sparsity level (S), coherence (µ) and randomness of
+sampling speciﬁed byR. Random coordinate sampling is often used to satisfy the RIP.
+The objective in CS is to ﬁnd the sparsest vectorx that yields the measurement vector
+y. However, since thel0 minimization is NP-hard an equivalentl1 relaxation is solved with
+an inequality constraint to account for measurement noise, i.e.,
+min ||x||1
+s.t. ||Ax − y||2 ≤ σ
+(17)
+15
+Page 16:
+where σ is related to the noise level. This optimization is known as the basis pursuit with
+denoising (BPDN) problem. In this work the spectral projected gradient forl (SPGL1)
+minimization algorithm is used to obtain a solution to the BPDN problem by solving a
+sequence of dual problems. The SPGL1 method is chosen because it is reported as a fast
+method for large scale sparse reconstruction.34
+Previous work showed the ability of CS with Fourier, Haar, Symlet and Daubechies
+representation bases to reconstruct paper proﬁles. For both the simulated and industrial
+trials the Fourier bases provide the lowest reconstruction error. The Fourier basis makes
+intuitive sense considering operations such as pressing and drying rollers are likely to result
+in sinusoidal variations. One limitation of this work is that the scanning geometry was not
+considered and instead random sampling was used which is not possible with a scanning
+sensor. For a high speed paper machine to satisfy the RIP condition it was proposed that
+either a sensor array or a large number of scanning sensors be used.27
+Based on previous work the Fourier basis is chosen as the representation basis for CS.
+Achieving the necessary number of samples to meet the RIP is likely not possible and regard-
+less the requisitea priori sparsity knowledge is not available to verify the RIP. Therefore,
+instead of attempting to guarantee perfect reconstruction according to the CS conditions,
+this work focuses on maximizing the obtained information to reconstruct the sheet proﬁle
+through CS. To extend previous developments it is desirable to provide a more realistic
+representation of the sampling ratio and scanning structure determined by the geometry of
+the scanning sensor. Furthermore, it is desirable to determine whether or not CS can pro-
+vide eﬀective MD-CD separation especially with respect to the eﬀects of MD aliasing. To
+demonstrate CS with a scanning sensor under MD aliasing consider Figure 6.
+Even with a relatively slow sheet the sampling ratio achieved is still only 0.2% of the
+total sheet. To improve this sampling ratio for CS a simple assumption is proposed.
+Assumption 4.The CD proﬁle variations are slow enough to be assumed static over a short
+period (e.g.,≈10%) of a single scan.
+16
+Page 17:
+Figure 6: Simulated sheet with 64 CD bins and 4 scans
+Note that this assumption is much less assertive than the assumption used by most MD-
+CD separation methods. Assumption 4 is applied in this example to four neighboring values,
+i.e., it is assumed thatF0(2,6) = F0(2,7) = F0(2,8) = F0(2,9) = F0(2,10) = -0.2668. This
+is performed for each measurement from each scan providing a band of measurements across
+the sheet. The measurement vectory and CS matrixA are updated to reﬂect these values.
+Next, CS is performed by solving the BPDN problem shown in equation 17. The sheet is
+reconstructed from the coeﬃcients, i.e.,f = Ψx, and reshaped into the estimated sheetF
+shown in Figure 7.
+Figure 7: Simulated sheet reconstruction with compressive sensing
+17
+Page 18:
+Comparative analysis
+Comparing the EF, PSA and CS methods for MD-CD separation is not straightforward since
+the favorable implementation of each technique is unique. For example, the EF method
+is eﬀective after a large number of scans have been processed whereas the PSA method
+compares two consecutive scans. Furthermore, the PSA method requires alternating scan
+speeds whereas the CS method performs better when the fastest scan speed is maintained.
+In the comparative analysis presented here special measures are taken to ensure each method
+is implemented as designed given the same simulated sheet and scanning setup.
+Experimental setup
+During industrial operation only the measurements obtained from the scanning sensor are
+available. Unfortunately since the entire true sheet is not measured verifying the CS recon-
+struction accuracy is challenging in practice. To determine the true sheet, post-production
+laboratory tests can be performed but these tests are limited in scope and expensive to per-
+form. 4 To compensate for the lack of industrial data Honeywell has provided a CD proﬁle
+that replicates a realistic industrial proﬁle. This proﬁle is shown in Figure 8 and a com-
+pressed version of it (i.e., less CD bins) is used in the comparative analysis. To speciﬁcally
+study the ability of MD-CD separation methods to reduce MD aliasing, the sinusoidal MD
+variations are chosen to have frequencies near integer multiples of(2tscan)−1. Zero mean nor-
+mally distributed random noise with standard deviationσe generates the residual variation.
+Figure 8: Realistic CD proﬁle provided by Honeywell
+18
+Page 19:
+Sheet proﬁle estimates from each MD-CD separation method are compared based on how
+well they ﬁt the true MD and CD variation proﬁles. Speciﬁcally, the root mean square error
+(RMSE) is calculated as follows:
+ϵ =
+√1
+k
+k∑
+i=
+(pi − ˆpi), (18)
+where k is the number of samples in the proﬁle,pi is the true property value andˆpi represents
+the estimated value. The smaller the RMSE the better the estimated proﬁle represents the
+true proﬁle with an RMSE of zero indicating a perfect ﬁt. For EF the scan average is used as
+the MD proﬁle so a zero order hold will be placed on the average value in order to extend to
+the true length of the sheet. Similarly for PSA the reconstructed MD proﬁle is interpolated
+to generate a signal of desired length. Simulation parameters are summarized in Table 2.
+Table 2: Comparative analysis simulation parameters
+Parameter Description Value
+wsheet sheet width (m) 8
+vscan scan speed(s) (m/s) 0.33, 1
+tscan scan time (s) 24, 8
+vsheet sheet speed (m/s) 1
+θ traversing angle from MD (°) 18.4, 45
+nCD = nB number of CD bins 100
+nEF
+S , nCS
+S number of scans for EF and CS 20, 8
+ωMD frequency of MD sinusoid(s) (Hz) 0.062, 0.12
+Results and discussion
+For EF the sheet is simulated for twenty scans but the CS method is only performed on the
+ﬁnal eight scans and the PSA technique only compares the ﬁnal two scans. Since the PSA
+technique requires alternating scan speeds a separate scanning trajectory is performed over
+the ﬁnal eight scans as the blue line in Figure 9 demonstrates. The reverse scan speed of the
+PSA method is equivalent to the regular scan speed from the CS and EF methods. The ﬁnal
+scan shares the same trajectory to allow direct comparison of the proﬁle reconstruction.
+19
+Page 20:
+Figure 9: Simulated sheet for comparative analysis
+The sheet is constructed with the realistic industrial CD proﬁle and two MD sinusoidal
+variations with frequencies near (2tscan)−1 to create MD aliasing. Normally distributed zero
+mean random noise with standard deviationσe = 0.15 is added to the simulated sheet. All
+20 scans of the original sheet are passed through an exponential ﬁlter with a ﬁlter factor
+α = 0.33 to generate an EF estimate of the ﬁnal scan. The PSA method is performed as
+described by Algorithm 1 withc = 1.5 and c = 1.0 to reconstruct the PSA estimate for
+the ﬁnal scan. The eight scans shown in Figure 9 are used by the CS method to reconstruct
+the entire sheet with the help of Assumption 4. The estimated CD proﬁle and MD trends
+are presented along with RMSE values in Figure 10.
+The CS method provides the best reconstruction of the CD proﬁle followed by the PSA
+technique and lastly the EF method. Although PSA removes part of the MD aliasing, the
+proﬁle still over-estimates some of the CD variations, likely due to indistinguishable MD
+variations. Alternatively, the CS estimate captures the essential shape of the true CD proﬁle
+buttheamplitudeisunderestimated. SoftthresholdingusedbySPGL1sparsiﬁesthesolution
+by removing small coeﬃcients at the expense of reducing the amplitude of the remaining
+coeﬃcients. This is apparent in the MD proﬁle where the CS method once again gives the
+20
+Page 21:
+Figure 10: MD-CD separation comparative analysis results
+best reconstruction. The PSA estimate of the MD trend has a higher RMSE than the scan
+average as it is not able to isolate and reconstruct the low frequency MD variation. This
+limitation could be addressed in future work by developing an adaptive threshold strategy.
+Multiple scanners - looking deeper into CS
+To better observe the potential of CS two scanners are implemented which represent a
+realistically achievable sensing framework and provide insight into the beneﬁt of additional
+samples with CS. The following test involves a CD dimension of 100 bins and an 8 m wide
+sheet moving at 8 m/s (withθ = 7.1°). Each scanner performs four scans at a speed of 1
+m/s with opposite trajectories. The MD, CD and residual variations are simulated as before
+to cause signiﬁcant MD aliasing. In Figure 11 the simulated sheet and the trajectory of the
+two scanners is shown on the left and the CS reconstruction of the sheet is presented on the
+right. The CS reconstruction provides a relatively accurate representation of the entire true
+sheet especially considering it only uses the measurements along the trajectory of the scan
+paths (in black). Note the increment change in the z-axis indicates reduced magnitude in
+21
+Page 22:
+the CS reconstruction. By using the geometry of the scanning sensors the CS method makes
+eﬃcient use of the available scanner information to provide an informative sheet estimate.
+Figure 11: Simulated sheet and CS estimate with 100 CD bins
+TodeterminetheresultsofMD-CDseparation, averagesaretakenalongeachMDposition
+of the CS reconstruction for the MD proﬁle and along each CD bin for the CD proﬁle. The
+same averaging is conducted for the raw scanner data to generate the proﬁle comparison
+presented in Figure 12. From the average CD proﬁles (top) the CS estimate (red) reduces
+a signiﬁcant amount of the aliasing exhibited by the CD proﬁle of the scan average (blue)
+which is evident numerically from the RMSE values in the legend. The average MD trends
+are shown in the bottom plot where the scanned values (blue) are the average from each
+scan. It is clear from these results that given the right circumstances the CS method is able
+to successfully reduce the detrimental eﬀects of MD aliasing. Moreover, the MD trend in the
+CS reconstruction provides vastly more information than the scan average as in EF. This
+test demonstrates the strong potential of CS for reducing MD aliasing and improving the
+resolution and accuracy of the MD trend for subsequent control of the MD process.
+In the following section the challenge of MD adaptive control is addressed. Prior to
+22
+Page 23:
+Figure 12: MD-CD separation results for CS with two scanning sensors
+introducing the adaptive control framework it is important to elaborate on the signiﬁcant
+connection between MD-CD separation and MD adaptive control. The best way to illustrate
+this connection is by referring to the MD trends in the bottom plot of Figure 12. The
+blue proﬁle shows the four averaged measurements that would generally be available to an
+MD control system. Not only does the low resolution result in slow upset detection but
+it also necessitates longer identiﬁcation experiments to collect data necessary for accurate
+system identiﬁcation and performance monitoring. Alternatively, by using a method such
+as CS (shown by the red proﬁle in the bottom of Figure 12) more than three thousand MD
+measurements can be provided to the MD control system over the same span of paper. The
+high resolution MD trend can facilitate improved feedback control, faster upset detection,
+better performance monitoring and more accurate system identiﬁcation.
+23
+Page 24:
+MD Adaptive Control
+The adaptive control strategy consists of techniques developed for MD process monitoring
+(PM), input design (ID) and system identiﬁcation (SI). By combining these sub-functions
+an adaptive control strategy for the MD process is developed. The adaptive framework
+automatically identiﬁes MPM, triggers an identiﬁcation experiment, designs an excitation
+signal, identiﬁes a new process model and updates the controller. An illustrative schematic
+of the closed-loop adaptive control framework is provided in Figure 13.
+K( ˆG(i)) G
+H
++ ut
+et
++
+PM
+ut, yt, ˆG(i)
+ID
+ut, yt, ˆG(i)
+SI
+ut, yt, ˆG(i)
+tf ts
+r+
++
+yt
+−
+yt
+r∗
+t
++
+ˆG(i+1)
+Figure 13: Adaptive framework for closed-loop MPC
+During normal operation the model predictive controller,K( ˆG(i)), controls the process,
+G, and the PM algorithm collects process input data,ut, and output data, yt. When G
+deviates from the estimated process model,ˆG(i), the PM algorithm detects the MPM and
+triggers an excitation experiment by sending the start time,ts, to the ID algorithm. An
+optimally designed excitation signal,r∗
+t, is calculated by the ID algorithm and added to the
+actuator movements, ut, to provide additional process excitation for a speciﬁed experiment
+duration. Once the experiment ends (i.e.,tf is reached) the SI algorithm collects the input-
+output (IO) data from the experiment duration to determine a new process model estimate.
+The new estimate, ˆG(i+1), is implemented in the controller and normal operation resumes.
+Successful implementation allows the controller to respond to changes in the process while
+maintaining feedback control, without requiring operator intervention.
+In what follows the MD process is described in greater detail after which each of the sub-
+24
+Page 25:
+functions within the adaptive control framework are described separately. This is followed by
+adescriptionofthesetofexperimentsthataredesignedtotesttheadaptivecontroltechnique
+relative to benchmark model identiﬁcation procedures. Upon analyzing the experimental
+results, conclusions and recommendations for further study are provided.
+The MD process
+The industrial simulator used in this work involves both the true process dynamics and the
+MPC control system. The MD process is modeled as a multi-input multi-output (MIMO)
+lower triangular system composed of six ﬁrst order plus deadtime (FOPDT) transfer func-
+tions with three manipulated variables (MVs) and three controlled variables (CVs). The
+process output, including an additive disturbance, is fed back to an MPC system that de-
+termines the new process input values.
+During normal operation the following expression is obtained from Figure 13:
+
+
+y1(t)
+y2(t)
+y3(t)
+
+
+= G(q)
+
+
+u1(t)
+u2(t)
+u3(t)
+
+
++ H(q)
+
+
+e1(t)
+e2(t)
+e3(t)
+
+
+, (19)
+where r(t)is the reference signal (or setpoint) and eachei(t)is an independent and identically
+distributed (IID) Gaussian white noise sequence with zero mean and varianceσ
+ei. 35 Process
+outputs y(t), y(t) and y(t) represent the measured basis weight (lbs/3000ft2), press mois-
+ture (%) and reel moisture (%), respectively. Furthermore, process inputsu(t), u(t) and
+u(t) represent the thick stock ﬂow (gpm), press section steam pressure (psi) and reel section
+steam pressure (psi), respectively. Apart from some user-speciﬁed tuning parameters, the
+details of the MPC controller,K( ˆG), will be limited to the update ofˆG.
+Both the nominal model used by the controller,ˆG(q), and the true plant transfer function,
+25
+Page 26:
+G(q), have the following form:
+G(q) =
+
+
+G11(q) 0 0
+G21(q) G22(q) 0
+G31(q) G32(q) G33(q)
+
+
+. (20)
+Each Gij in equation 20 represents an FOPDT transfer function which is deﬁned in contin-
+uous time according to
+Gij(s) = bij
+aijs +1e−dijs, (21)
+where bij, aij and dij are the continuous gain, time constant and time delay parameters,
+respectively. 36 The nominal model used by the controller,ˆG(q), takes the same form except
+the sub-transfer functions are denotedˆGij with parametersˆbij, ˆaij and ˆdij. Initially there is
+a 10% negative MPM in each of the process parameters, i.e., each of the parameters in the
+nominal model are 10% lower than the true process parameters presented in Table 3. The
+Table 3: Continuous MD Process Parameters
+Gij bij aij dij
+G 1.1600 73.26 77
+G 0.3256 50.622 99
+G -0.1540 297.0 121
+G 0.8283 170.28 43
+G -0.2618 232.32 33
+G -0.0611 27.324 99
+noise model, H(q), is a diagonal matrix of stable and inversely stable ﬁlters, i.e.,
+H(q) =
+
+
+H1(q) 0 0
+0 H2(q) 0
+0 0 H3(q)
+
+
+, (22)
+where each Hi(q) can be either high pass or low pass ﬁlters of varying order.
+26
+Page 27:
+Closed-loop model identiﬁcation
+In addition to updating the process model, SI is of critical importance for MPM detection.
+The predominant SI methods can be broadly categorized as belonging to either the predic-
+tion error family, subspace approaches or non-parametric correlation and spectral analysis
+methods. An important diﬀerence between open-loop and closed-loop data is the correlation
+between the noise and the input with closed-loop data as a result of feedback control. This
+correlation can be problematic for extending open-loop identiﬁcation methods such as sub-
+space and nonparametric methods to closed-loop data.37 Therefore, the analysis presented
+here focuses on the prediction error method (PEM).
+Depending on the feedback assumptions, closed-loop identiﬁcation methods can be clas-
+siﬁed as either direct identiﬁcation (DI), indirect identiﬁcation or joint input-output ideni-
+tiﬁcation. 38 For PM, it is desirable for closed-loop identiﬁcation to be performed on routine
+operating data. Joint input-output identiﬁcation methods are ruled out as they depend on
+external excitation. Furthermore, both indirect and joint input-output identiﬁcation tech-
+niques can become overly complex in the presence of nonlinear feedback.37,39 As it is common
+for industrial MPC to display nonlinear dynamics, the indirect and joint input-output iden-
+tiﬁcation techniques are not ideal. The focus of this report is on comparing the direct
+identiﬁcation (DI) method to a new method that utilizes both an autoregressive exogenous
+(ARX) model and an output-error (OE) model, i.e., closed-loop ARX-OE identiﬁcation.
+Both the DI and ARX-OE identiﬁcation methods can be seen as varying parameteriza-
+tions of the PEM which minimizes the squared 2-norm of the prediction error, i.e.,
+VN(G, H) = 1
+N
+N∑
+t=
+ˆϵ2(t, θ), (23)
+where ˆϵ(t, θ) represents the diﬀerence between the measured and predicted outputs, i.e.,
+ˆϵ(t, θ) = y(t) − ˆy(t|θ). Please note the distinction made between the actual process white
+noise sequence, ei(t), and the prediction errorˆϵ(t, θ). 40 For plant and noise models deﬁned
+27
+Page 28:
+by the parameter vectorθ, the predicted output,ˆy(t|θ), is given by35
+ˆy(t|θ) = ˆH -1(q, θ) ˆG(q, θ)u(t) +
+[
+1 − ˆH -1(q, θ)
+]
+y(t), (24)
+and after algebraic manipulation the following expression for the prediction error is obtained
+ˆϵ(t, θ) = ˆH -1(q, θ)
+[
+y(t) − ˆG(q, θ)u(t)
+]
+. (25)
+Please note, with respect to MD-CD separationθ represents the angle of the scanning tra-
+jectory whereas in SI the symbolθ refers to the parameter vector.
+Ultimately, the goal is to obtainθ such that the parameterized models are equal to the
+true system, i.e, ˆG(q, θ) = G(q) and ˆH(q, θ) = H(q). Minimizing equation 23 with respect
+to θ results in the following PEM estimate of the parameter vector
+ˆθN = arg min
+θ
+VN(θ, ZN), (26)
+where ZN = {u(1), y(1), . . . , u(N), y(N)} represents the provided IO data within a given
+time span t = 1, . . . , N. 37,40 A polynomial representation of the MIMO MD system is used
+here, e.g., the expression fory in equation 19 becomes
+A(q)y(t) = B(q)
+F(q) u(t − nk) + B(q)
+F(q) u(t − nk)
++ B(q)
+F(q) u(t − nk) + C(q)
+D(q) e(t),
+(27)
+where nk represents the various delays of each input. Expressions fory and y follow in the
+same fashion. The polynomials presented in equation 27 are deﬁned as follows:
+A(q, θ) = 1 + ˆaq− + · · · + ˆanaq−na, (28)
+B(q, θ) = ˆb + ˆbq− + · · · + ˆbnbq−nb, (29)
+28
+Page 29:
+C(q, θ) = 1 + ˆcq− + · · · + ˆcncq−nc, (30)
+D(q, θ) = 1 + ˆdq− + · · · + ˆdndq−nd, (31)
+F (q, θ) = 1 + ˆfq− + · · · + ˆfnf q−nf . (32)
+Where model orders na, nb, nc, nd, nf and nk must be speciﬁed. The time delays,nki, are
+estimated by comparing a series of ARX models with diﬀerent delays and determining which
+delay value corresponds to the ARX estimate that provides the best ﬁt to the IO data.
+ARX-OE identiﬁcation
+The ARX-OE method is a new technique for performing closed-loop identiﬁcation using
+routine operating data withouta priori knowledge of the noise model order. The ARX-OE
+method is carried out through the following two step procedure:
+1. A high order ARX estimate of the noise model is generated and IO data is ﬁltered with
+the inverse of the noise model estimate.
+2. AnOEmodelwiththeﬁlteredIOdataissolvedviathePEMusingacombinationofline
+search algorithms including adaptive subspace Gauss-Newton, Levenberg-Marquardt
+least squares and steepest descent least squares.
+After introducing the ARX-OE identiﬁcation method for the SISO system a straight-
+forward extension to the MIMO case is presented. First, the Box-Jenkins system from
+equation 19 is represented with the following ARX model structure:
+A(q, θ)y(t) = B(q, θ)u(t − nk) + e(t). (33)
+Dividing both sides of equation 33 byA(q, θ) yields
+y(t) = B(q, θ)
+A(q, θ) u(t − nk) + 1
+A(q, θ) e(t) (34)
+29
+Page 30:
+and by relating back to equation 19, it is apparent that
+ˆG(q, θ) = B(q, θ)
+A(q, θ) and ˆH(q, θ) = 1
+A(q, θ) . (35)
+The order of A(q, θ) is selected suﬃciently high to capture the dynamics of the true noise
+model (e.g., na ≈ 15). The Box-Jenkins model provides the ﬂexibility necessary to vary the
+noise model order and compare the DI method with and without correct noise model order
+speciﬁcation. A series of experiments are conducted to ensure closely matching impulse
+response (IR) coeﬃcients for both the true and estimated inverse noise models.
+Upon estimating the inverse noise model, the IO data is ﬁltered withA(q, θ), i.e.,
+uf(t) = A(q, θ)u(t) and yf(t) = A(q, θ)y(t). (36)
+Inserting IO expressions from equation 36 into equation 34 yields
+yf(t)
+A(q, θ) = B(q, θ)
+A(q, θ)
+uf(t − nk)
+A(q, θ) + 1
+A(q, θ) e(t) (37)
+and multiplying both sides of equation 37 byA(q, θ) yields the following OE model
+yf(t) = B(q, θ)
+A(q, θ) uf(t − nk) + e(t). (38)
+Finally, this OE model can be solved via the PEM and equation 23 as described before.
+For the MIMO system, equation 38 extends to a system of three output equations with
+the expression foryf
+ (t) shown for reference as follows:
+yf
+ (t) = B(q, θ)
+A(q, θ) uf
+(t − nk) + B(q, θ)
+A(q, θ) uf
+(t − nk)
++ B(q, θ)
+A(q, θ) uf
+(t − nk) + e(t).
+(39)
+Model orders ofA(q, θ) and B(q, θ) for the second part of the ARX-OE method are speciﬁed
+30
+Page 31:
+as na = nb = 1. The ﬁnal ﬁltered OE expressions are obtained by substituting the ﬁrst
+order model estimates for A(q, θ) and B(q, θ) into equation 39. The expressions for yf
+ (t)
+and yf
+ (t) are obtained in an analogous manner. The values ofˆbij and ˆaij obtained from this
+identiﬁcation procedure provide estimates of the process gain and time constant, respectively.
+The closed-loop DI method is implemented as a benchmark in this work. It begins by
+deﬁning model orders and proceeds by solving equation 26 directly with process IO data.
+Although the noise model is unknown, an estimate of the noise model order is necessary
+for DI. The sensitivity of identiﬁcation to an incorrect noise model is considered in the
+experimental investigation.
+Implementation
+Closed-loop SI is fundamental to both the PM and SI aspects of the adaptive control frame-
+work. For PM a series of ARX-OE identiﬁcations are performed using over-lapping moving
+windows of IO data. The moving window has a length of 1440 samples and takes steps of
+length 60 samples with a sample time of 5s. In other words the identiﬁcations are performed
+every 5 minutes on the previous 2 hours worth of IO data. In the ﬁrst stage of the ARX-OE
+method the inverse noise model estimateA(q, θ) is estimated with an order ofna = 18 and
+the polynomial B(q, θ) is estimated with an order ofnb = 10.
+The large orders of the ﬁrst stage ARX model require estimation of many parameters
+whichcanresultinhighvarianceestimatesduetothelimitedamountofdata. Minimizingthe
+cost function, VN(θ, ZN), involves a trade-oﬀ between bias and variance that is determined
+by the selection of model order. Regularization constantsΛ and R are determined to reduce
+the variance of the model estimates and the regularized ARX model is solved, i.e.
+VN(θ, ZN) = 1
+N
+N∑
+t=1
+ˆϵ2(t, θ) + Λ(θ − θ∗)T R(θ − θ∗), (40)
+where θ∗ is the mean of the prior distribution ofθ which is assumed to be Gaussian.41
+31
+Page 32:
+Since the PM algorithm uses small amounts of routine operating data the signal to noise
+ratio is improved by ﬁltering out high frequency noise. This denoising step is performed after
+the IO data is ﬁltered with the inverse noise model estimate. To improve the OE estimation
+the range of parameters are bounded usinga priori knowledge of acceptable values. The
+excitation experiment has a duration of 3000 samples (i.e.,≈ 4.2 hours). All IO data from
+the excitation experiment is collected by the SI algorithm to perform both DI and ARX-OE
+identiﬁcation. Both the OE model in the ARX-OE method and the DI model are estimated
+with ﬁrst order numerator and denominator polynomials. The DI method assumes a ﬁrst
+order numerator and denominator structure for the noise model. Once the identiﬁcation
+results are determined and the controller update is complete, regular operation resumes.
+Performance monitoring
+As applications of model-based control methods increase, so too does the need for adequate
+performance assessment and model validation. Failure to acknowledge and correct signiﬁcant
+MPM can result in sub-optimal control and production losses. It is estimated that up to
+60%ofindustrialcontrollersexhibitcontrollerperformanceproblemsfromissuessuchaspoor
+tuning, lack of maintenance and inappropriate control structure, among others.42 Controller
+PM is a well established ﬁeld that has drawn increased interest since the development of
+the minimum variance benchmark by Harris in 1989.43 Some other notable developments
+for MPC assessment include benchmarking with historical MPC objective function data,
+monitoring the prediction error to determine model quality and using principal component
+analysis (PCA) or partial least squares (PLS) to detect controller degradation.44,45
+Closed-loop prediction error monitoring presents challenges with respect to diagnosing
+large prediction errors as they can be due to MPM, set-point changes as well as measured
+and unmeasured disturbances.46 Since both the noise model and the process model can
+change during operation it is necessary to distinguish process model changes from noise
+model changes. If the noise model changes and the process model does not change it is
+32
+Page 33:
+unlikely that conducting an identiﬁcation experiment will improve controller performance.47
+Since monitoring is performed almost constantly it is beneﬁcial to employ a technique that
+passively monitors the process. In this work an innovative MPM detection algorithm using
+support vector machines (SVMs) on routine operating data is employed. For a thorough
+exposition of this MPM detection method please refer to the seminal work.48,50
+Model-plant mismatch detection with a one-class support vector machine
+The MPM detection implemented in this work uses the ARX-OE identiﬁcation method on
+routine operating data in combination with a one-class SVM in order to distinguish between
+changes in process models and noise models. Due to the presence of noise and the lack of
+signiﬁcant excitation in routine operating data, directly comparing the ARX-OE estimates to
+the controller model does not provide a reliable MPM detection procedure. Instead, a range
+of acceptable variation of process model estimates is established as a benchmark and new
+IO data is compared to this benchmark. Speciﬁcally, a one-class SVM is used to compare
+new process model estimates to the benchmark and if these estimates fall outside of the
+acceptable range they are regarded as MPM indications.
+To train the SVM while accounting for gain and time constant mismatch the model
+estimates are represented as ﬁnite impulse response (FIR) coeﬃcients. The one-class SVM
+is formulated as49
+min
+w,ξ,b
+1
+2 ||w||2 − b + 1
+vl
+l∑
+i=1
+ξi,
+s.t. w⊤Φ(xi) ≥ b − ξi, ξi ≥ 0.
+(41)
+where w and b are the respective slope and oﬀset of the separating hyper-plane in the high-
+dimensional feature space Φ generated with a Gaussian kernel κ(x, y) = e−||x−y||/c. The
+parameters v and c tune the support vectors and the shape of the Gaussian kernel, re-
+spectively. The slack variable ξ permits local variations along the hyperplane boundary.
+Employing the kernel trick allows the dual optimization problem to be solved in the lower
+dimensional input space providing computational eﬃciency. Solving the dual problem pro-
+33
+Page 34:
+vides the decision functionh(x) (where x is the FIR vector) which is used to deﬁne the MPM
+indicator that ultimately raises the MPM alarm according to a user-speciﬁed threshold.48
+The SVM implemented in this work can be understood as a binary classiﬁer that indi-
+cates whether or not ARX-OE estimates belong to the model implemented in the controller
+or whether MPM has occurred. Immediately after a new controller estimate is determined, a
+training stage begins during which a series of overlapping moving-window ARX-OE identiﬁ-
+cations are performed. During the training stage it is assumed that no MPM exists and the
+FIR coeﬃcients of the estimated process models create a reference cluster as shown in Fig-
+ure 14. During the testing stage the FIR coeﬃcients of current process model estimates are
+Time in Samples
+0 5 10 15 20 25 30
+Amplitude
+0
+0.005
+0.01
+0.015
+0.02
+0.025
+0.03
+0.035
+Impulse Response Coefficients of Estimates of G21
+Lower bound
+Upper bound
+   Cluster of
+'Good Models'
+Figure 14: Training the SVM on FIR coeﬃcients without MPM50
+compared with the reference cluster in the high dimensional feature. The decision function
+h(x) generates a decision boundary that indicates whether the testing data belongs to the
+cluster of reference models or whether MPM has occurred. This mismatch classiﬁcation is
+performed for both process and noise model estimates in order to conﬁrm whether identifying
+a new process model will improve controller performance.
+34
+Page 35:
+Implementation
+For this particular study the duration of the training period is 3500 samples with a sample
+time of 5s (i.e., ≈ 4.9 hours of training). The closed-loop ARX-OE training windows are
+1440 samples long with a step size of 60 samples (i.e., 2 hour window length and 5 minute
+step size). The process and noise model estimates during training are used to generate the
+reference cluster considered free of MPM. During testing, the SVM algorithm takes current
+ARX-OE estimates and returns plant and noise model indicators that provide positive values
+if no MPM is suspected and negative values if the estimate is classiﬁed as exhibiting MPM.
+The plant and noise model indicators are observed over the duration of an hour (i.e., 720
+samples) and if over 95% of the values are negative it is determined that MPM has occurred.
+The noise model indicators are analyzed ﬁrst and if the alarm threshold of negative values
+is reached the SVM is retrained. If the noise model does not exhibit mismatch and the
+process model indicators reach the alarm threshold an identiﬁcation experiment is triggered
+by designing an excitation signal,r∗
+t, as described in what follows.
+Input design
+During the identiﬁcation experiment an excitation signal,r∗
+t, is added to the process input,
+ut, to generate informative process IO data. Informative IO data has a relatively high signal
+to noise ratio which enables improved SI and more accurate parameter estimation. A com-
+mon technique for exciting the process is to simply inject a pseudo-random binary sequence
+(PRBS) as a perturbation signal. Disrupting the process with perturbation sequences or
+set-point changes and removing feedback control can lead to lost production time by failing
+to meet stringent product speciﬁcations.51 Typically, for identiﬁcation purposes a higher
+quality estimate involves a lower covariance of estimated parameters. Thus, traditional ap-
+proaches to ID often involve minimizing some function of the covariance matrix such as the
+determinant, trace or largest eigenvalues.52
+In this work, the Fisher information matrix is maximized. The Fisher information matrix
+35
+Page 36:
+is deﬁned as the inverse of the parameter covariance matrix as followsF = cov(θN)−1 = ΨΨ′
+where the matrix Ψ is composed of a series of vectorsψ, i.e., Ψ = [ ψt, . . . , ψt−N +1]. Each
+vector ψ contains the relevant IO data determined by the orders of the ARX polynomials
+A(q, θ) and B(q, θ), i.e.,ψt =
+[
+y′
+t−, . . . , y′
+t−na, u′
+t−d, . . . , u′
+t−d−nb
+]′
+, such that the vectorψt and
+the parameter vectorθ model the process output asyt = θψt. For a process described by an
+ARX model the parameter vectorθ is given by the expressionθ = [a1, . . . , ana, b1, . . . , bnb].
+The trace of the Fisher information matrixRu = trace(F ) is
+Ru =
+n∑
+p=
+na∑
+j=
+N∑
+i=j
+(yp(t − i))2 +
+m∑
+q=
+nb∑
+j=
+N∑
+i=j
+(uq(t − nk +1 − i))2 (42)
+where n is the number output variables,m is the number input variables,na is the order of
+A(q, θ), nb is the order ofB(q, θ), nk is the input delay andN is the number of IO samples.53
+The ID technique applied in this work can be summarized as follows:
+max
+ut
+˜Ru
+subject to yL ≤ y(t) ≤ yH,
+uL ≤ u(t) ≤ uH,
+|u(t) − u(t − 1)| ≤ ∆uH,
+(43)
+where the objective function˜Ru is deﬁned as
+˜Ru =
+m∑
+q=
+( 1
+∆uH
+q
+var(u∗
+q)
+)
+. (44)
+The input sequenceu∗
+q contains all possible combinations of input movements over the spec-
+iﬁed prediction horizon where each movement is limited to a binary choice of±∆uH
+q . Orig-
+inally, the trace of the Fisher information matrix deﬁned in equation 42 was maximized
+subject to the convex input and output constraints. Since this optimization involves maxi-
+mizing a high dimensional convex quadratic function it can be diﬃcult for quadratic solvers
+36
+Page 37:
+to handle and there is no guarantee that a global optimum is determined.
+Since Ru is convex, the maximum over a compact convex domain deﬁned by the convex
+constraints in equation 43 occurs at one of the vertices, i.e., when the constraints are active.
+The number of vertices grows exponentially with the dimension of the problem so originally
+a solution based on visiting each vertice individually was considered computationally in-
+feasible. 53 However, in this work the number of input variables ism = 3, so with a small
+prediction horizon the problem can be solved by determining the maximum at all of the
+vertices. The input sequenceu∗
+q is selected such that only combinations of inputs that obey
+the IO boundaries while taking the maximum allowable step size are considered.
+Implementation
+Excitation signals are determined for each of the 3000 samples of the identiﬁcation experi-
+ment. Previous input movements extending for a length greater than the sum of the largest
+time delay and the largest time constant are provided to the ID algorithm. Combinations of
+all possible future input sequences are determined by computing binary permutations equal
+to ±∆uH
+q over the prediction horizon. For eﬃcient computation the prediction horizon is
+limited to a length of four steps after which the input value is held constant. The ID calcu-
+lation determines the four step horizon at each new sample. Previous model estimates are
+used in combination with past and future input values to predict future outputs.
+The maximum input movements are speciﬁed as∆uH
+q = [3.0, 1.4, 0.6]. Upper and lower
+bounds of input set-point deviation are set asuH
+q = −uL
+q = [30, 15, 8] whereas upper and
+lower bounds for output set-point deviations are speciﬁed asyH
+p = −yL
+p = [15, 1.0, 2.0]. To
+account for both the time delay and the process time constant a total of thenup = 111
+most recent input values are provided to the ID algorithm at each iteration. This value is
+determined by taking the sum of the maximum time constant estimate, the maximum time
+delay estimate and a contingency factor of 35. The total prediction horizon has a length
+of 27 which is deﬁned by the maximum time delay estimate plus a contingency factor of
+37
+Page 38:
+5. Input sequences that meet the constraints are stored, values of˜Ru in equation 44 are
+calculated and the sequence that maximizes˜Ru is selected as the perturbation sequence.
+Experimental setup
+A series of experiments are conducted with an industrial MPC control system provided
+by Honeywell and the aforementioned MD process model. Speciﬁcally, a high ﬁdelity paper
+machine simulator was provided by Honeywell that includes variable time delays according to
+changing machine speeds, a wide range of CD response shapes and nonlinear mass balance
+and dryer models accounting for consistency, retention and stock density. However, it is
+important to note that the speciﬁc conﬁguration of the simulator implemented in this work
+is better characterized as medium ﬁdelity since linear models were purposefully selected to
+demonstrate the proposed linear process model identiﬁcation techniques.
+The simulations presented here focus on detecting and resolving a mismatch in the gain of
+theprocess. Limitingthefocustoasingletypeofmismatchprovidesmorestringentcontrolof
+experimental variables to better compare various experimental conﬁgurations such as tuning
+the process with DI or ARX-OE identiﬁcation estimates. Since the MIMO process is highly
+coupled any identiﬁcation experiment in a single IO pairing will result in excitation of all of
+the process inputs and outputs. For this reason when MPM is determined the identiﬁcation
+algorithm updates the gain, time constant and time delay values of all process models.
+A generalized illustration of the experimental simulation time-line is provided in Figure
+15. One important common feature of all experimental simulations is that a 2× gain MPM
+exclusively in b is introduced at sample numbernMPM = 4000. The SVM is trained for a
+period of nSVM = 3500 samples at which point MPM detection becomes active. The sample
+at which MPM is detected varies slightly across experiments but it is described here asnID.
+A user speciﬁed delay nID +∆ − nID = 1600 separates the MPM detection point and the
+actual ID excitation experiment. Typically the ID experiment would start atnID, however
+the delay provides time to perform set-point changes and collect response data.
+38
+Page 39:
+Figure 15: Illustrative time-line of the experimental simulations
+After a speciﬁed waiting periodnB − nMPM = 500, a set-point change at samplenB
+increases the set-point ofy by 10% ofy
+. This set-point is held for 300 samples before it is
+decreased by twice as much, held for another 300 samples and then returned to the original
+set-point y
+. This series of set-point changes provides information on the dynamic response
+of the closed-loop system under MPM. An identical procedure is used at samplenSI (i.e.,
+after the controller update) to compare the dynamic closed-loop responses both with and
+without adaptive control.
+A summary of the simulation parameters is provided in Table 4 below. Controller pa-
+Table 4: General experimental setup parameters
+Symbol Value Description
+nF 14000 Simulation duration in samples
+nMPM 4000 Sample to trigger MPM
+αsp 1.5 Controller reference tracking
+αd 1.5 Controller disturbance rejection
+y
+p [174, 2.3, 6.2] Nominal output set-points
+u
+q [165, 115, 35] Nominal input set-points
+∆y
+p% [10, 0, 0] Magnitude of set-point change
+nID +∆ − nID 1600 Delay after MPM detection
+nB − nMPM 500 Wait period before set-point change
+n∆y 300 Samples to hold each set-point change
+H, H, H 1st or 6th order High pass noise models
+uPRBS
+q ±[2.0, 1.0, 0.5] Magnitude of PRBS excitation
+σe
+p [0.08, 0.02, 0.01] Standard deviation of noise
+rameters αsp and αd are used to tune the MPC for reference tracking performance and
+39
+Page 40:
+disturbance rejection performance, respectively. The ﬁrst study evaluates the ID algorithm
+relative to a PRBS perturbation benchmark of magnitude uPRBS
+q = ± [2.0, 1.0, 0.5] and
+the second study evaluates closed-loop ARX-OE method relative to a DI benchmark. The
+sensitivity of the DI method to noise model speciﬁcation is evaluated with a sixth order
+noise model. The ﬁrst and sixth order noise models are stable and inversely stable high pass
+(HP) ﬁlters. Both studies include an evaluation of the MPM detection and the closed-loop
+response to a set-point change before and after the adaptive update.
+The dynamic response to a set-point change is evaluated qualitatively by observing the
+output response shape and quantitatively by comparing the observed response to the ideal
+response (based on the true process model). The mean square error (MSE) is used to
+determine the diﬀerence between the observed outputsyi and the ideal outputs˜y, i.e.,
+ϵ = 1
+n
+n∑
+i=
+(yi − ˜yi), (45)
+where n is the number of data points collected during the dynamic response test.
+Experimental results
+TheﬁrstexperimentinvolvesusingaPRBSforexcitationtoprovideareferenceforevaluating
+theIDalgorithm. The2 ×gainMPMisdetectedbythePMalgorithmafteronly860samples.
+Since a delay of 1600 samples is used, the PRBS excitation experiment begins at sample
+number nID +∆ = 6460. After the PRBS experiment an ARX-OE identiﬁcation is performed
+and the estimated parameters are used to tune the controller. The input proﬁles with PRBS
+excitation are shown below in Figure 16. These can be compared with the input proﬁles in
+Figure 17 where the proposed ID strategy is used. In Figure 17 the gain MPM is detected by
+the PM algorithm after 760 samples and the ID experiment begins at sample number 6340.
+The thick stock ﬂow (u) variation during the ID excitation ranges primarily between 160
+gpm and 170 gpm and thus satisﬁes the required constraints of 165±30 gpm. Variation of
+40
+Page 41:
+Figure 16: Input proﬁles with PRBS excitation
+Figure 17: Input proﬁles with ID excitation
+the press steam pressure (u) is restricted to 115±15 psi which is approximately satisﬁed
+for the duration of the excitation experiment. Finally, the dryer steam pressure (u) is
+constrained between 35±8 psi but this is violated at around 550 min. In general the PRBS
+excitation creates larger and more frequent input constraint violations than the ID algorithm.
+It is apparent from these input proﬁles that the set-point change iny is causing undesirable
+behavior in u and u which ultimately degrades the output responses ofy and y.
+After the PRBS and ID experiments an ARX-OE estimate is used to update the con-
+41
+Page 42:
+troller. The output proﬁles over the experiment duration with PRBS excitation and ID
+excitation are presented in Figure 18 and Figure 19, respectively. Recall, y is the basis
+Figure 18: Output proﬁles with PRBS excitation
+Figure 19: Output proﬁles with ID excitation
+weight (BW) measured in lbs/(3000ft2), y is the press moisture (%) andy is the reel mois-
+ture (%). With ID excitation the press moisture and reel moisture exhibit a lower magnitude
+of disruption after the adaptive update. Alternatively, with PRBS excitation they1 set-point
+change creates a higher magnitude disruption in the reel moisture after the adaptive update.
+42
+Page 43:
+Each of the process outputs obey the speciﬁed upper and lower bound constraints during
+the ID excitation experiment whereas the PRBS excitation results in occasional violations
+of the output constraints. The increased variation in the output proﬁles during the PRBS
+identiﬁcation experiment is only desirable if it results in an improved adaptive update and
+subsequent dynamic response.
+To evaluate the eﬀect of the adaptive control update we observe the dynamic response
+to set-point changes before and after the adaptive update. Focusing on the process outputs
+during the ﬁrst set-point change (i.e., before the adaptive update) yields Figure 20. It is
+Figure 20: Closed-loop response to a 10% set-point change iny1 with MPM
+immediately clear that the closed-loop dynamic response under MPM exhibits undesirable
+over-shoot and oscillatory behavior. Due to the MIMO coupling the BW set-point change
+disrupts the press and reel moisture values as well. In all other experiments the closed-loop
+response to a set-point change exhibits the same behavior as the experimental conﬁgurations
+before the identiﬁcation experiment are identical. Therefore, for concise presentation Figure
+20 will serve as a qualitative reference for the closed-loop response to a set-point change with
+MPM. Quantitatively, over six trials the MSE (ϵ) before the adaptive update varies from
+23.45 to 24.40 iny1, from 0.48 to 0.53 iny2 and from 0.14 to 0.15 iny3.
+The eﬀect of the ARX-OE update is evaluated by comparing the closed-loop response
+43
+Page 44:
+to a set-point change before and after the adaptive update. Moreover, the PRBS and ID
+techniques are evaluated based on their responses after the adaptive update as shown in
+Figure 21 and Figure 22, respectively. Regardless of whether a PRBS or ID signal is used,
+Figure 21: Closed-loop response after an ARX-OE update with PRBS excitation
+Figure 22: Closed-loop response after an ARX-OE update with ID excitation
+the closed-loop response after the adaptive update exhibits considerable improvement. This
+isespeciallyevidentfortheoutput y1 thatreceivestheset-pointchangeastheMSEisreduced
+dramatically fromϵ = 24.01 toϵ = 2.5 with PRBS orϵ = 2.1 with ID excitation. The MIMO
+44
+Page 45:
+coupling introduces a higher MSE iny3 after the adaptive update, particularly with a PRBS
+excitation. However, it is important to note that the transfer functions associated withy3 did
+not exhibit MPM prior to the adaptive update but they were updated anyways. This issue
+will be addressed in future work by further analyzing the scores from the MPM detection
+algorithm and only updating the parameters from the transfer functions that exhibit MPM.
+Evaluating the PRBS and ID excitation based on the dynamic response of the outputs
+yields a preference for the proposed ID technique. The ID excitation results in lower MSE
+values for all outputs but particularly fory3 which has ϵ = 2.7 for PRBS andϵ = 0.4 for
+ID excitation. Furthermore, the ID strategy is preferred because it adheres more strictly
+to the upper and lower bound constraints on the inputs and outputs during the excitation
+experiment. Improvedcontrolofprocessinputsandoutputsduringtheexcitationexperiment
+is a signiﬁcant beneﬁt of the proposed ID method.
+ThesecondstudyofthisreportaimstoevaluatetheeﬀectivenessoftheARX-OEadaptive
+update relative to a DI update. Since the DI method requires an estimate of the noise model
+order this study includes experiments where the noise model order is correctly and incorrectly
+speciﬁed. First, the closed-loop response to a set-point change after both ARX-OE and DI
+updates are compared with a correctly speciﬁed ﬁrst order noise model. Afterwards the true
+noise model order is changed to six and the same analysis is conducted with the DI method
+still assuming ﬁrst order noise. The proposed ID excitation strategy is conducted throughout
+the comparison of identiﬁcation methods. Please note that the prediction length is decreased
+from four to three with the sixth order noise model for both the ARX-OE and DI methods
+so the relative comparison remains valid.
+The closed-loop response with an ARX-OE update shown in Figure 22 can be compared
+to the closed-loop response with a DI update in Figure 23. In Figure 23 the 2× gain MPM
+is detected by the PM algorithm after 860 samples and the identiﬁcation experiment begins
+at sample numbernID +∆ = 6460. Since the same ID technique is applied the raw input and
+output proﬁles have been omitted as they are redundant. With a ﬁrst order noise model
+45
+Page 46:
+Figure 23: Closed-loop response after a DI update with ID excitation
+the DI method provides a lower MSE fory1 and y2 but the MSE for y3 is slightly higher
+relative to the ARX-OE method. These results are not surprising since the DI method
+assumes the correct noise model order whereas the ARX-OE method does not rely on such
+a prioriknowledge. Even so the DI output response proﬁles are only marginally better than
+the ARX-OE response with the largest diﬀerence being the MSE iny1 of ϵ = 2.1 for the
+ARX-OE method andϵ = 0.7 for the DI method.
+When a sixth order noise model order is used and the ID prediction length is dropped
+from four to three we obtain the closed-loop responses for ARX-OE and DI shown in Figure
+24 and Figure 25, respectively. For both of these experiments the PM algorithm successfully
+identiﬁes the MPM after 800 samples and after a delay of 1600 samples the identiﬁcation
+experimentbeginsatsamplenumber6400. Onceagaintherawinputandoutputproﬁleshave
+been omitted as they are redundant considering the same ID technique was implemented.
+With a sixth order noise model the ARX-OE update provides a lower MSE iny1 than
+the DI method. Due to rounding to two decimal places and averaging over the number
+of samples the MSE values are shown as zero fory2 in Figure 24 as well asy2 and y3 in
+Figure 25. In fact, comparing the results from ﬁrst order and sixth order noise it is apparent
+that the MSE decreases in general with the exception ofy1 with the DI method. The sixth
+46
+Page 47:
+Figure 24: Closed-loop response after an ARX-OE update with sixth order noise
+Figure 25: Closed-loop response after a DI update with sixth order noise
+order noise models potentially introduce more excitation to the process resulting in a more
+accurate identiﬁcation. Since the MPM occurs inG11 the closed-loop response ofy1 after the
+adaptive update is of particular interest. While the control performance ofy1 improves with
+ARX-OE method under a sixth order noise model the DI method reveals a slight decrease
+in control performance. This illustrates the beneﬁt of ARX-OE when noa prioriknowledge
+of the noise model order is available.
+Ultimately, these results successfully illustrate the eﬀectiveness of the uniﬁed adaptive
+47
+Page 48:
+control strategy. The MPM was successfully detected by the PM algorithm in a timely fash-
+ion for every experiment. Moreover, the closed-loop response to a set-point change improves
+considerably with adaptive control. The proposed algorithm succeeds at eliminating the
+harmful over-shoot and oscillatory responses observed prior to the adaptive model update.
+A minor decrease in control performance can be observed in the variables that were not
+under MPM due to an unnecessary adaptive update. Future work will ensure the MPM
+detection algorithm is selectively updates only the transfer functions that undergo MPM.
+Another interesting avenue for future work which was brought to the authors attention is
+investigating an eﬃcient single-step implementation of the ARX-OE method that treats the
+ARX parameters as hyper-parameters. This could yield improved accuracy at the cost of
+increased computation but it remains beyond the scope of this work.
+Conclusion
+In this paper complementary developments are presented towards MD-CD separation and
+MD adaptive control of a paper machine. Prior to implementing MD control the measured
+MD trend needs to be extracted through MD-CD separation. A novel MD-CD separation
+method based on compressive sensing is presented and demonstrated in comparison to two
+other model-free benchmarks with favorable results. The CS method is studied with two
+scanning sensors where it is shown to enable reconstruction of a high resolution MD trend
+for improved control of the MD process. One limitation is that the CS method needs to be
+implemented more eﬃciently for online estimation or signiﬁcant computation resources are
+required. The CS method can be improved by implementing a debiasing strategy to mitigate
+the eﬀects of soft-thresholding.
+Once the MD proﬁle is separated from the scanner signal it can be provided to the
+MPC system for the MD process. A more accurate MD trend can enable improved perfor-
+mance monitoring and identiﬁcation of the MD process. The adaptive control framework
+48
+Page 49:
+proposed in this work is capable of consistently identifying MPM, generating an excitation
+signal that meets IO constraints and identifying a new process model. An innovative MPM
+detection algorithm using an SVM provides fast and accurate detection of gain mismatch.
+The proposed input design strategy is compared to a PRBS excitation and shown to pro-
+vide better controller performance as well as stricter adherence to IO constraints. Finally, a
+novel closed-loop model identiﬁcation procedure is proposed and demonstrated to improve
+controller performance during a set-point change relative to the benchmark DI method.
+Ultimately, this work has successfully demonstrated the functionality and performance of
+the proposed MD-CD separation and adaptive control techniques. Although there is room
+for further development, the contributions presented here have resulted in an algorithm that
+can automatically detect MPM and update an MPC controller while maintaining feedback
+control. This work provides a substantial contribution in developing a framework for the
+adaptive tuning of a MIMO model-based control system without requiring expensive open-
+loop identiﬁcation experiments or operator intervention.
+It is important to note the direct impact of the MD trend determined though MD-CD
+separation on the ability to eﬀectively harness the adaptive MD control framework. In this
+work we have proposed an MD-CD separation method that can increase the available MD
+measurements by at least an order of magnitude resulting in direct beneﬁts for the PM, ID
+and SI algorithms. A uniﬁed experimental setup that combines MD-CD separation, adaptive
+MD control and adaptive CD control is desired for comprehensive closed-loop experiments.
+Acknowledgement
+The authors thank Honeywell Process Solutions, the National Science and Engineering Re-
+search Council of Canada and the Izaak Walton Killam Memorial Fund for funding this
+research through a collaborative research and development grant, a Canada Graduate Schol-
+arship Master’s award and a Killam Pre-Doctoral Memorial Fellowship.
+49
+Page 50:
+References
+(1) Duncan, S.; Wellstead, P. Processing data from scanning gauges on industrial web
+processes. Automatica 2004, 40, 431–437.
+(2) VanAntwerp, J. G.; Featherstone, A. P.; Braatz, R. D.; Ogunnaike, B. A. Cross-
+directional control of sheet and ﬁlm processes.Automatica 2007, 43, 191–211.
+(3) Chen, S.-C. Kalman ﬁltering applied to sheet measurement. American Control Confer-
+ence, 1988. 1988; pp 643–647.
+(4) Aslani, S.; Davies, M.; Dumont, G.; Stewart, G. Estimation of Cross and Machine
+Direction Variations Using Recursive Wavelet Filtering.Pulp and Paper Canada2009,
+45–48.
+(5) Wang, X. G.; Dumont, G. A.; Davies, M. S. Estimation in paper machine control.IEEE
+Control Systems1993, 13, 34–43.
+(6) Mijanovic, S. Paper machine cross-directional control near spatial domain boundaries.
+Ph.D. thesis, university of british columbia, 2004.
+(7) Wang,X.G.; Dumont,G.A.; Davies,M.S.Modellingandidentiﬁcationsofbasisweight
+variations in paper machines.IEEE Transactions on Control Systems Technology1993,
+1, 230–237.
+(8) Dumont, G. A.; Jonsson, I. M.; Davies, M. S.; Ordubadi, F. T.; Fu, Y.; Natarajan, K.;
+Lindeborg, C.; Heaven, E. M. Estimation of moisture variations on paper machines.
+IEEE transactions on control systems technology1993, 1, 101–113.
+(9) Chu, D.; Gheorghe, C.; Backstrom, J.; Forbes, M.; Chu, S.Model predictive control and
+optimization for papermaking processes; INTECH Open Access Publisher, 2011.
+(10) Wang, X. G.; Dumont, G. A.; Davies, M. S. Adaptive basis weight control in paper
+machines. Control Applications, 1993., Second IEEE Conference on. 1993; pp 209–216.
+50
+Page 51:
+(11) Aslani, S.; Davies, M.; Dumont, G.; Stewart, G. Detecting Aliasing Between Cross and
+Machine Direction Variations by Variable Sampling Rate.measurement 2009, 20, 1.
+(12) Halousková, A.; Kárn` y, M.; Nagy, I. Adaptive cross-direction control of paper basis
+weight. Automatica 1993, 29, 425–429.
+(13) Ohenoja, M. One-and two-dimensional control of paper machine: a literature review.
+October 2009.
+(14) Lang, D.; Fu, C. Variable Speed Scanning-A Fundamentally Better Way to Scan.O
+Papel: revista mensal de tecnologia em celulose e papel2013, 74, 59–64.
+(15) Measurement Systems and Product Variability.TAPPI, Paper Machine Quality Control
+Systems (QCS)2005, 1.
+(16) Heaven, E. M.; Jonsson, I. M.; Kean, T. M.; Manness, M. A.; Vyse, R. N. Recent
+advances in cross machine proﬁle control.IEEE Control Systems1994, 14, 35–46.
+(17) Lu, Q.; Rippon, L. D.; Gopaluni, R. B.; Forbes, M. G.; Loewen, P. D.; Backstrom, J.;
+Dumont, G. A. Cross-directional controller performance monitoring for paper machines.
+American Control Conference (ACC), 2015. 2015; pp 4970–4975.
+(18) Cutshall, K. The nature of paper variation.Tappi journal1990, 73, 81–90.
+(19) Bialkowski, W. Newsprint Uniformity and Process Control The Untapped Competitive
+Edge. CPPA Conference, Montreal, Canada. 1990.
+(20) Stewart, G. E.; Gorinevsky, D. M.; Dumont, G. A. Feedback controller design for
+a spatially distributed system: The paper machine problem. IEEE Transactions on
+Control Systems Technology2003, 11, 612–628.
+(21) Gendron, S. Fundamental Properties of Scanner Signals for the Correct Separation
+of Paper Machine CD and MD Variations.PAPTAC 91st Annual Meeting2005, 1,
+D297—D302.
+51
+Page 52:
+(22) Lindeborg, C. A process model of moisture variations.Pulp & paper Canada1986, 87,
+42–47.
+(23) Nesic, Z.; Davies, M.; Dumont, G. Paper machine data compression using wavelets.
+Control Applications, 1996., Proceedings of the 1996 IEEE International Conference
+on. 1996; pp 161–166.
+(24) Karimzadeh, S. Online detection of picketing and estimation of cross direction and ma-
+chine direction variations using the discrete cosine transform. Ph.D. thesis, University
+of British Columbia, 2008.
+(25) Chen,S.-C.AnalysisofSheetVariations–InsightsofTwo-DimensionalVariations. 2011,
+990–1002.
+(26) Chen, S. Determination of cd and/or md variations from scanning measurements of
+a sheet of material. 2012; https://www.google.com/patents/US20120278032, US
+Patent App. 13/457,870.
+(27) Towﬁghi, P. Estimating paper sheet process variations from scanned data using com-
+pressive sensing. Ph.D. thesis, University of British Columbia, 2011.
+(28) Duarte, M. F.; Eldar, Y. C. Structured compressed sensing: From theory to applica-
+tions. IEEE Transactions on Signal Processing2011, 59, 4053–4085.
+(29) Skelton, J.; Wellstead, P.; Duncan, S. Distortion of web proﬁles by scanned measure-
+ments. Pulp & Paper Canada2003, 104, 81–84.
+(30) Candès, E. J.; Wakin, M. B. An introduction to compressive sampling.IEEE signal
+processing magazine2008, 25, 21–30.
+(31) Arfken, G. B.; Weber, H. J.Mathematical methods for physicists international student
+edition; Academic press, 2005.
+52
+Page 53:
+(32) Chatterjee,A.Anintroductiontotheproperorthogonaldecomposition. Current science
+2000, 78, 808–817.
+(33) Candès, E. J., et al. Compressive sampling. Proceedings of the international congress
+of mathematicians. 2006; pp 1433–1452.
+(34) Han, L.; Han, L.; Li, Z. Inverse spectral decomposition with the SPGL1 algorithm.
+Journal of Geophysics and Engineering2012, 9, 423.
+(35) Ljung, L.System identiﬁcation; Wiley Online Library, 1999.
+(36) Featherstone, A. P.; Braatz, R. D. Control-oriented modeling of sheet and ﬁlm pro-
+cesses. AIChE Journal1997, 43, 1989–2001.
+(37) Forssell, U.; Ljung, L. Closed-loop identiﬁcation revisited.Automatica 1999, 35, 1215–
+1241.
+(38) Gustavsson, I.; Ljung, L.; Söderström, T. Identiﬁcation of processes in closed
+loop—identiﬁability and accuracy aspects.Automatica 1977, 13, 59–75.
+(39) Van den Hof, P. Closed-loop issues in system identiﬁcation.Annual reviews in control
+1998, 22, 173–186.
+(40) Forssell, U.; Ljung, L. A projection method for closed-loop identiﬁcation.IEEE Trans-
+actions on Automatic Control2000, 45, 2101–2106.
+(41) Chen, L. L. T. What can regularization oﬀer for estimation of dynamical systems?
+IFAC Proceedings Volumes2013, 46, 1–8.
+(42) Jelali, M. An overview of control performance assessment technology and industrial
+applications. Control engineering practice2006, 14, 441–466.
+(43) Harris, T. J. Assessment of control loop performance.The Canadian Journal of Chem-
+ical Engineering1989, 67, 856–861.
+53
+Page 54:
+(44) Botelho, V.; Trierweiler, J. O.; Farenzena, M.; Duraiski, R. Methodology for detecting
+model–plant mismatches aﬀecting model predictive control performance.Industrial &
+Engineering Chemistry Research2015, 54, 12072–12085.
+(45) Botelho, V.; Trierweiler, J. O.; Farenzena, M.; Duraiski, R. Perspectives and chal-
+lenges in performance assessment of model predictive control.The Canadian Journal
+of Chemical Engineering2016, 94, 1225–1241.
+(46) Shah, S. L.; Patwardhan, R.; Huang, B. Multivariate controller performance analysis:
+methods, applications and challenges. AICHE Symposium Series. 2002; pp 190–207.
+(47) Badwe, A. S.; Gudi, R. D.; Patwardhan, R. S.; Shah, S. L.; Patwardhan, S. C. Detection
+of model-plant mismatch in MPC applications.Journal of Process Control2009, 19,
+1305–1313.
+(48) Lu,Q.; Gopaluni,R.B.; Forbes,M.G.; Loewen,P.D.; Backström,J.U.; Dumont,G.A.
+Model-Plant Mismatch Detection with Support Vector Machines.IFAC-PapersOnLine
+2017, 50, 7993–7998.
+(49) Schölkopf,B.; Platt,J.C.; Shawe-Taylor,J.; Smola,A.J.; Williamson,R.C.Estimating
+the support of a high-dimensional distribution.Neural computation 2001, 13, 1443–
+1471.
+(50) Lu, Q. Adaptive model-predictive control and its applications in paper-making pro-
+cesses. Ph.D. thesis, University of British Columbia, 2018.
+(51) Zhu, Y. Multivariable process identiﬁcation for MPC: the asymptotic method and its
+applications. Journal of Process Control1998, 8, 101–115.
+(52) Patwardhan, R. S.; Gopaluni, R. B. A moving horizon approach to input design for
+closed loop identiﬁcation.Journal of Process Control2014, 24, 188–202.
+54
+Page 55:
+(53) Youseﬁ, M.; Rippon, L.; Forbes, M.; Gopaluni, R.; Loewen, P.; Dumont, G.; Back-
+strom, J. Moving-Horizon Predictive Input Design for Closed-Loop Identiﬁcation.
+IFAC-PapersOnLine2015, 48, 135–140.
+Profile
+Estimation
+Adaptive
+Control
+Process
+Monitoring
+Model
+Identification
+ G
+G
+Figure 26: For table of contents only
+55
+
+==================================================
+--- ABB 2sigma.pdf ---
+Page 1:
+Page 2:
+Page 3:
+Page 4:
+Page 5:
+Page 6:
+Page 7:
+Page 8:
+Page 9:
+Page 10:
+Page 11:
+Page 12:
+Page 13:
+Page 14:
+Page 15:
+Page 16:
+Page 17:
+Page 18:
+Page 19:
+Page 20:
+Page 21:
+Page 22:
+Page 23:
+Page 24:
+Page 25:
+Page 26:
+Page 27:
+Page 28:
+Page 29:
+Page 30:
+Page 31:
+Page 32:
+Page 33:
+Page 34:
+Page 35:
+Page 36:
+Page 37:
+Page 38:
+
+==================================================
+--- InTech-Model_predictive_control_and_optimization_for_papermaking_processes.pdf ---
+Page 1:
+15 
+Model Predictive Control and Optimization  
+for Papermaking Processes 
+Danlei Chu, Michael Forbes, Johan Backström,  
+Cristian Gheorghe and Stephen Chu 
+Honeywell, 
+Canada 
+1. Introduction 
+Papermaking is a large-scale two-dimensional process. It has to be monitored and controlled 
+continuously in order to ensure that the qu alities of paper products stay within their 
+specifications. There are two types of control problems involved in papermaking processes: 
+machine directional (MD) control and cross di rectional (CD) control. Machine direction 
+refers to the direction in which paper sheet trav els and cross direction refers to the direction 
+perpendicular to machine direction. The object ives of MD control and CD control are to 
+minimize the variation of the sheet quality measurements in machine direction and cross 
+direction, respectively. This chapter consid ers the design and applications of model 
+predictive control (MPC) for papermaking MD and CD processes.  
+MPC, also known as moving horizon control (MHC), originated in the late seventies and has 
+developed considerably in the past two decades (Bemporad and Morari 2004; Froisy 1994; 
+Garcia et al. 1998; Morari & Lee 1999; Rawlings  1999; Chu 2006). It can explicitly incorporate 
+the process’ physical constraints in the controller design and formulate the controller design 
+problem into an optimization problem. MPC has become the most widely accepted advanced 
+control scheme in industries. There are over  3000 commercial MPC implementations in 
+different areas, including petro-chemicals, food processing, automotives, aerospace, and pulp 
+and paper (Qin and Badgwell 2000; Qin and Badgwell 2003).  
+Honeywell introduced MPC for MD controls in 1994; this is likely the first time MPC 
+technology was applied to MD controls (Bac kström and Baker, 2008). Increasingly, paper 
+producers are adopting MPC as a standard approach for advanced MD controls. 
+MD control of paper machines requires regulation of a number of quality variables, such as 
+paper dry weight, moisture, ash content, caliper, etc. All of these variables may be coupled 
+to the process manipulated variables (MV’s), including thick stock flow, steam section 
+pressures, filler flow, machine speed, and dist urbance variables (DV’s) such as slice lip 
+adjustments, thick stock consistency, broke recycle, and others. Paper machine MD co ntrol 
+is truly a multivariable control problem. 
+In addition to regulation of the quality va riables during normal operation, a modern 
+advanced control system for a paper mach ine may be expected to provide dynamic 
+economic optimization on the machine to redu ce energy costs and eliminate waste of raw 
+materials. For machines that produce more than one grade of paper, it is desired to have an 
+automatic grade change feature that will crea te and track controlled variable (CV) and MV 
+www.intechopen.com
+Page 2:
+ 
+Advanced Model Predictive Control 310 
+trajectories to quickly and safely transfer pr oduction from one grade to the next. Basic MD-
+MPC, economic optimization, and automatic grade change are discussed in this chapter. 
+MPC for CD control was introduced by Hone ywell in 2001 (Backström et al. 2001). Today, 
+MPC has become the trend of advanced CD control applications. Some successful MPC 
+applications for CD control have been reported  in (Backström et al. 2001, Backström et al. 
+2002; Chu 2010a; Gheorghe 2009). 
+In papermaking processes, it is desired to control the CD profile of quality variables such as 
+dry weight, moisture, thickness, etc. These properties are measured by scanning sensors that 
+traverse back and forth across the paper sheet,  taking as many as 2000 or more samples per 
+sheet property across the machine. There may be several scanners installed at different 
+points along the paper machine and so there ma y be multiple CD profiles for each quality 
+variable. 
+The CD profiles are controlled using a number of  CD actuator arrays. These arrays span the 
+paper machine width and may contain up to 300 individual actuators. Common CD 
+actuators arrays allow for local adjustment, across the machine, of: slice lip opening, 
+headbox dilution, rewet water sprays, and indu ction heating of the rolls. As with the CD 
+measurements, there may be multiple CD actuator  arrays of each type available for control. 
+By changing the setpoints of the individual CD actuators within an array, one can adjust the 
+local profile of the CD measurements.  
+The CD process is a multiple-input-multiple-ou tput (MIMO) system. It  shows strong input 
+and output off-diagonal coupling properties. One CD actuator array can have impact on 
+multiple downstream CD measurement profiles. Conversely, one CD measurement profile can 
+be affected by multiple upstream CD actuat or arrays. Therefore, the CD control problem 
+consists of attempting to minimize the vari ation of multiple CD measurement profiles by 
+simultaneously optimizing the setpoints of all individual CD actuators (Duncan 1989). 
+MPC is a natural choice for paper machine CD control because it can systematically handle 
+the coupling between multiple actuator an d multiple measurement arrays, and also 
+incorporate actuator physical constraints into the controller design. However, different from 
+standard MPC problems, the most challenging part of the cross directional MPC (CD-MPC) 
+is the size of the problem. The CD-MPC pr oblem can involve up to 600 MVs, 6000 CVs, and 
+3000 hard constraints. Also, the new setpoints of MVs are required as often as every 10 to 20 
+seconds. This chapter discusses the details of th e design for an efficient large-scale CD-MPC 
+controller. 
+This chapter has 5 sections. Section 2 provid es an overview of the papermaking process 
+highlighting both the MD and CD aspects. Section 3 focuses on modelling, control and 
+optimization for MD processes. Section 4 focuses on modelling, control and optimization fo r 
+CD processes. Both Sections 3 and 4 give indu strial examples of MPC applications. Finally, 
+Section 5 draws conclusions and provides some perspective on the future of MD-MPC and 
+CD-MPC.  
+2. Overview of papermaking processes 
+A flat sheet of paper is a netw ork consisting of cellulose fi bres bound to one another. A 
+paper machine transforms a slurry of water an d wood cellulose fibres into this type of 
+network. The whole papermaking process can be  regarded as a water-removal system: the 
+consistency of fibre solutions, called stock by papermakers, increases from around 1% at the 
+beginning of a paper machine (the headbox) to around 95% at the end (the reel). 
+www.intechopen.com
+Page 3:
+ 
+Model Predictive Control and Optimization for Papermaking Processes 
+311 
+2.1 Brief description of papermaking processes 
+In general a paper machine can be divided into four sections: forming section, press section, 
+drying section, and calendering section. In th e forming section, the stock flow enters the 
+headbox to be distributed evenly across a continuously running fabric felt called the wire. 
+The newly formed sheet is carried by the wire along the Fourdrinier table, which has a set of 
+drainage elements that promote water remova l by various gravity and suction mechanisms. 
+These elements include suction boxes, couch roll s, foils, etc. The solid consistency of the 
+paper web can reach 20% by the time the web leaves the forming section and enters the 
+press section. Figure 1 illustrates the configuration of a Fourdrinier-type paper machine.   
+ 
+ 
+Fig. 1. The configuration of a Fourdrinier-type paper machine 
+The press section may be considered as an ex tension of the water-removal process that was 
+started on the wire in the forming section. Typi cally, it consists of 1 – 3 rolling press nips. 
+When the paper web passes through these nips , the pressing roll squeezes water out and 
+consolidates the web formation at the same ti me. In the press section, both the surface 
+smoothness and the web strength are improved. As  higher web strength is achieved in the 
+press section, better runability will be observed in the drying section. A paper machine is 
+typically operated at a very high speed. The fastest machine speed may be as high as 2,200 
+meters per minute.  
+The drying section includes multiple drying cylinders which are heated by high temperature 
+and high pressure steam. The he at is transferred from steam onto the paper surface through 
+these rotating steel cylinders. The heat flow increases the paper surface temperature to the 
+point where water starts evaporating and escaping from the paper web. The drying section is 
+the most energy consuming part of paper manufacturing. Before the paper enters the drying 
+section, the solid consistency is around 50%. After the drying section, the consistency can reach 
+95%, which corresponds to a finished product moisture specification.  
+The last section of the paper machine is calle d the calendering section. Calendering is a 
+terminology referring to pressing  with a roll. The surface and th e interior properties of the 
+paper web are modified when it passes throug h one or more calendering nips. Typically the 
+calendering nip consists of one or multiple so ft/hard or hard/hard roll pairs. The hard roll 
+presses the paper web against the other roll, an d deforms the paper web plastically. By this 
+means, the calender roll surface is replicated onto the paper web. Depending on the type of 
+paper being produced, the primary objective of  calendering may be to produce a smooth 
+paper surface (for printing), or to improve th e uniformity of CD prop erties, such as paper 
+caliper (thickness).  
+www.intechopen.com
+Page 4:
+ 
+Advanced Model Predictive Control 312 
+More details of paper machine design and operation are given in (Smook 2002; Gavelin 
+1998). 
+2.2 Paper quality measurement 
+A paper machine can have one or more me asurement scanners. The quality measurement 
+sensors are mounted on the scanner head which travels back and forth across the paper web 
+to provide online quality measurements. The most common paper machine quality 
+measurements include dry weight, moisture, and caliper. Dry weight indicates the solid 
+weight per unit area of a sheet of paper. Fo r different types of products, the value of dry 
+weight can vary from 10 grams per square meter (gsm), in the case of paper tissue, to 400 
+gsm, in the case of heavy paper board. Moisture  content is another critical quality property 
+of the finished paper product. It indicates th e mass percentage of water contained in a sheet 
+of paper. Moisture content is a key factor dete rmining the strength of the finished product. 
+Typical moisture targets range from 5% to 9%. Caliper is the measure of the thickness of a 
+sheet of paper. It is a key factor determin ing the gloss and printability of the finished 
+product. The caliper targets are in the range from 70 	Ɋm  to 300 Ɋm  depending on the 
+production grade. In general the online measur ements for dry weight, moisture and caliper 
+are available and used for both the MD and CD feedback controller designs.
+ 
+As the scanners travel across a moving sheet, th e real data collected actually comes from a 
+zig-zag trajectory (See Figure 2). These data co ntain both CD and MD variation. A reliable 
+MD/CD separation scheme is the prerequisite  for MD and CD control designs. Since the 
+MD/CD separation is a separate topic, the re st of this chapter assumes that the pure 
+MD/CD measurements have been obtained pr ior to the MD/CD controller development. 
+The scanner measurements are denoted by x(i, t),  n  indexes the n measurements 
+taken across the sheet each scan (CD measuremen t index), and t is the time stamp of each 
+scan (MD measurement index). xതሺtሻ  is the MD measurement given by 
+ x ത(t)=
+1
+n ∑ x(i, t)n
+i=1
+. (1) 
+ 
+ 
+Fig. 2. The zig-zag scanner trajectories 
+www.intechopen.com
+Page 5:
+ 
+Model Predictive Control and Optimization for Papermaking Processes 
+313 
+2.3 Brief description of MD control 
+The objective of MD control is to minimize th e variation of the sheet quality measurements 
+in machine direction. 
+A number of actuators are available for control of the MD variables. Stock flow to the headbox 
+is regulated by the stock flow valve or variab le speed pump. As stock flow increases, the 
+amount of fibre flowing into the forming section increases and dry weight and caliper increase. 
+At the same time, there is also more water coming through the machine and moisture wil l 
+increase. So, ch anges in the stock flow affect dry we ight, moisture and caliper. The steam 
+pressure in the cylinders of the drying section may be adjusted. As the steam pressure in the 
+cylinders increases, so does the temperature in the cylinders, and more heat is transferred to 
+t h e  p a p e r .  I n  t h i s  w a y ,  s t e a m  p r e s s u r e  a f f e c ts moisture. Typically, the dryer cylinders are 
+divided into groups, and the steam pressure for each of these dryer sections may be adjusted 
+independently. Machine speed affects dry weight and caliper, as increasing the machine speed 
+stretches the paper web thinner, giving it less mass per unit area. Machine speed also affects 
+moisture as both the drying properties of the paper and the residence time in the dryer change. 
+Clearly, paper machine MD control is a multivariable control problem. 
+2.4 Brief description of CD control 
+The objective of CD control is to achieve unifor m paper qualities in the cross direction, i.e., 
+to minimize the variation of CD profiles. The CD variation, can be formulated as two times 
+of the standard deviation of the CD profile, 
+ 2 σCD(t)=2* ቀ
+1
+n-1
+∑ (x(i, t)-xത(t))
+2n
+i=1 ቁ
+1
+2
+  (2) 
+Often the term ‘CD spread’ is used interchangeably with 2σ CD.  
+CD actuators are used to regulate CD profile s and improve the uniformity of paper quality 
+properties in the cross direction i.e., reduce the value of 2σCD.  
+The most common dry weight CD actuators ar e both located at the headbox. The headbox 
+slice opening is a full-width orifice or nozzle th at can be adjusted at points across the width 
+of the paper machine. This allo ws for differences in the local stock flow onto the wire across 
+the machine. The consistency profiler changes the consistency of local stock flow by injecting 
+dilution water and altering the local concen tration of pulp fibre across the headbox. 
+Headbox slice and consistency profiler are primarily designed for dry weight control, but 
+they have the effects on both moisture and calip er profiles. Figure 1 indicates the location of 
+headbox dry weight actuators.  
+The most common moisture actuators are th e steam box and water spray. The steam box 
+applies high temperature steam to the surface of the moving paper web. As the latent heat in 
+the steam is released and heats up the paper web, it lowers the web viscosity and eases 
+dewatering in the press section. The water spray regulates the moisture profiles according to 
+a different mechanism. It deploys a fine wate r spray to the paper surface through a set of 
+nozzles across the machine width to re-moistur ize the paper web. Similar to the dry weight 
+actuators, moisture actuators are designed for moisture profile regulation but they may have 
+effects on the caliper profile. The steam box is typically installed in the press section and the 
+water spray is located in the drying section. Figure 1 indicates the physical locations of 
+moisture actuators.  
+The most common caliper actuators are hot air showers and induction heaters. Both types of 
+actuators provide surface heating for calendering rolls. The hot shower uses the high 
+www.intechopen.com
+Page 6:
+ 
+Advanced Model Predictive Control 314 
+temperature steam or air; the induction heater uses the high frequency alternating current. 
+By heating up the calender roll, caliper actuators alter the local diameter of the calender roll 
+and subsequently increase the local pressure applied to the paper web. The physical location 
+of the caliper actuators can be also found in Figure 1.  
+3. Modelling, control and optimization of papermaking MD processes 
+Control of the MD process is typically a regulation problem where the paper quality 
+variables need to be held within specified qu ality limits. At the same time, the constant 
+pressure to increase operational efficiency de mands that the paper production uses the least 
+amount of raw materials and energy required to meet quality goals.  
+When multiple grades of paper are produced on  a single paper machine, control must also 
+be able to provide quick transitions of the qu ality variables along smooth trajectories. When 
+the differences between the paper grades are large, it may be necessary to enhance the 
+control algorithm to account for process nonlinea rities that become apparent over a larger 
+span of operating points. 
+3.1 Modeling of papermaking MD processes 
+In this section, modelling of the MD process for MPC controller design is discussed. The 
+additional modelling required for paper grade change control is discussed in section 3.4.  
+For effective MPC control of pape r MD quality variables, it is necessary to build a matrix of 
+linear models relating the process MV’s to th e quality variables (the CV’s). A basic paper 
+machine model matrix most often includes st ock flow, steam pressure of multiple dryer 
+sections, and machine speed as MVs, and paper weight (basis weight or dry weight), and 
+moisture as CV’s. Many other MV’s and CV ’s can be included in the model matrix 
+depending on the complexity of the paper ma chine and the paper quality requirements. An 
+example model matrix is given in Figure 3. 
+ 
+ 
+Fig. 3. A basic model matrix for CD-MPC. The models are step responses. 
+www.intechopen.com
+Page 7:
+ 
+Model Predictive Control and Optimization for Papermaking Processes 
+315 
+The process models used for MPC control are often developed in transfer function form, 
+such as: 
+ yሺsሻ	= g(s)u(s)+d(s)  (3) 
+and 
+ y(s)= ቎
+yଵ ሺsሻ
+ڭ
+y୒ ౯ ሺsሻ
+቏ ,			gሺsሻ = ቎
+gଵଵ ሺsሻ … g ଵ୒ ౫ ሺsሻ
+ڭ
+g୒ ౯ ଵ ሺsሻ … g ୒ ౯ ୒ ౫ ሺsሻ
+቏,  u(s)=቎
+uଵ ሺsሻ
+ڭ
+u୒ ౫ ሺsሻ
+቏, (4) 
+where yሺsሻ ∈ ℂ ୒ ౯  is the Laplace transformation of the N୷ 	 MD quality measurements (such as 
+dry weight, moisture, caliper, etc). uሺsሻ ∈ ℂ ୒ ౫  is the Laplace transformation of the actuator 
+setpoints (such as thick stock flow, dryer section steam pressure(s), filler flows, ma chine 
+speed, etc). d(s) 	∈ ℂ ୒ ౯  is the Laplace transformation of  the augmented process disturbance 
+array.  g୧୨ሺsሻ ∈ ℂ  (i	 = ͳ … N ୷ 	and	j	 = ͳ … N ୳ ሻ are the transfer functions from the j th actuator u୨ 
+to the ith MD quality measurement 	y୧.  
+3.1.1 Model identification 
+Typically the MD process models that are used  as the basis for the MD-MPC controller are 
+identified from data obtained during simple process experiments. A se ries of step changes 
+is made for each MV. There is a delay after each step long enough so that the full 
+responses of all of CV’s can be observed. That is, the CV responses rea ch steady state 
+before the next step change in the MV is made. These types of process experiments  are 
+known as bump tests. 
+Once a set of identification data has been obtained, various techniques may be used to 
+generate a process model from this data. In th e simplest case, plots of the bump tests are 
+reviewed to graphically estimate a process gain, ݇௜௝ , dead time, ܶௗ ೔ೕ , and time constant, ܶ௣ ೔ೕ , 
+yielding the process model: 
+ ݕ௜ሻ =
+௞ ೔ೕ ௘
+ష೅ ೏ ೔ೕ ೞ
+ଵା் ೛ ೔ೕ ௦
+ݑ௝ሻ  (5) 
+More complex methods involve use of regression  and search techniques to find both the 
+optimum model parameters, and the optimum model structure (transfer function numerator 
+and denominator orders). These techniques typically use minimization of squared model 
+prediction errors as the objective: 
+ ݕపݕ௜ሻ൯
+ଶே
+௞ୀଵ  (6) 
+Where ݕపሻ and ݕ௜ሻ are respectively the predicte d and actual values of the i th CV at time 
+k. (Ljung 1998) is the classic reference on sy stem identification, and there are commercial 
+software packages available that automate much of the system identification work. 
+3.2 MD-MPC design 
+Once all of the bump test, and system identifi cation activities have been performed, the 
+complete process model (3) is used directly in the model predictive controller. MPC solves 
+an optimization problem at each control execution. One robust MPC problem formulation is: 
+www.intechopen.com
+Page 8:
+ 
+Advanced Model Predictive Control 316 
+ min୼୳,୷ ౨
+ଵ
+ଶ
+‖Wሺy୰ −S ȟ uሻ‖ଶ
+ଶ , (7) 
+Subject to: 
+ݕ௟ݕ୰ݕ୦  
+ݑ୪ ൑u൑u ௛  
+ݑ௟ ൑∆ u൑∆ u ௛  
+The values of ݕ௥  are the CV targets and S Δ U are the predicted future values of the CV’s. S is 
+the prediction matrix, containing all the info rmation from the process model (3). W is a 
+weighting matrix, and ‖∙‖ଶ
+ଶ  is the two-norm squared operator. ݕ௟	and ݕ୦  are the low and high 
+CV quality limits, ݑ୪ and u௛  are the low and high MV limits, and ݑ௟ and ∆u௛  are the low 
+and high limits for MV moves. As discussed in the section below, this problem formulation, 
+combined with techniques employed in its solution implicitly provide robustness 
+characteristics in the controller design.  
+The technical details of the solution of the problem (7) are given in (Ward 1996); however, 
+some notable aspects of the solution method ology and beneficial characteristics of the 
+solution are given in the section below. 
+3.2.1 Model scaling and controller robustness 
+Robust numerical solution of the optimization problem (7) depends on condition number of 
+the system gain matrix, G. Prior to perfor ming the controller design, the gain matrix 
+condition number is minimized by solving the problem: 
+ minୈ ౨, ୈ ౙ {Ɉ ሺD୰ gDୡ ሻ}, (8) 
+Where Ɉ  is condition number, and D r and D c are diagonal transformation matrices. The 
+scaled system gain matrix gs is then: 
+ gୱ =D ୰ gDୡ , (9) 
+gୱ  is then used for all MPC computations. 
+It should be noted that the objective (7) does not explicitly penalize the MV moves Δu as a 
+method to promote controller robustness. Instead, controller robustness is provided  by the 
+CV range formulation and singular value thresholding.  
+First, the CV range formulation refers to the inequalities given in the problem formulation 
+(7). Under this formulation, if a CV is predicted to be within it range in the future, no MV 
+action is taken. Since MV moves are not made unless absolutely necessary, this is a very 
+robust policy. 
+Second, the solution of the problem involves  an active set method that allows the 
+constrained optimization problem to be conver ted into an unconstrained problem. A URV 
+orthogonal decomposition (see Ward 1996) of th e matrix characterizing the unconstrained 
+problem is then employed to solve the uncons trained problem. Prior to the decomposition, 
+singular values of the problem matrix that ar e less than a certain threshold are dropped, 
+reducing the dimension of the problem, and ensu ring that the controller does not attempt to 
+control weakly controllable directions of the process. 
+www.intechopen.com
+Page 9:
+ 
+Model Predictive Control and Optimization for Papermaking Processes 
+317 
+3.3 Economic optimization 
+Energy consumption is a big concern for paperm akers. Increasing profits by minimizing 
+operating costs without sacrificing paper quality and runability is always a goal for them. In 
+theory, if the number of MVs of a process is  greater than the number of CVs plus the 
+number of active constraints, the process has degrees of freedom allowing for steady-state 
+optimization. Product value optimization can be systematically integrated with the MD-
+MPC control. One can then take the feed, prod uct, and utility costs into account with the 
+MD controller design.  
+For the economic optimization of a process, the following objective is to be minimized: 
+ ܽ௬ ೔ݕ௜ݕ௜଴ ሻଶܾ௬ ೔ݕ௜൯௜ܽ௨ ೕݑ௝ݑ௝଴ ൯
+ଶ
+ܾ௨ ೕݑ௝ ቁ௝  (10) 
+Here ݕ௜଴  and ݑ௝଴  are the desired steady state values of the process CV’s and MV’s, ܽ௬ ೔ and 
+ܽ௨ ೕ  are the costs of quadratic deviation from the desired values, and ܾ௬ ೔ and ܾ௨ ೕ  are the 
+linear costs of the CV’s and MV’s. This objectiv e is useful for paper machines, for example, 
+by placing costs on the different energy sources used in drying. 
+The economic objective is combined with th e MPC control problem objective to give an 
+augmented problem formulation. The augmented problem is then solved using the same 
+solution method as described above. 
+Economic optimization is a lower priority for paper machines than quality control. If the 
+paper does not meet quality specifications, it cannot be sold, and any savings made from 
+economic optimization are more than lost. Therefore, economic opti mization only occurs 
+when there are extra degrees of freedom for the controller. Economic optimization is not 
+attempted unless all of the CV’s are predicted to  remain within their quality specifications 
+over the whole of the controller’s prediction horizon.  
+3.3.1 Mill implementation results  
+MPC including an economic optimization layer was implemented for a tissue machine. A 
+diagram of the tissue machine is given in Figure 4. As can be seen in the diagram, tissue dry 
+weight and moisture are measured at the reel; moisture is measured between the second 
+through-air dryer (TAD2) and the Yankee dryer,  and TAD1 exhaust pressure must also be 
+monitored and controlled. These four variables are the CV’s in this example. A large number 
+of MV’s are available to control this machin e. Stock flow, TAD1 supply temperature, TAD1 
+dry end differential pressure, TAD1 gap pre ssure, TAD2 exhaust temperature, TAD2 dry 
+end differential pressure, TAD2 gap pressu re, Yankee hood temperature, and Yankee 
+supply fan speed are all used as MV’s in the MPC. Machine speed and tickler refiner were 
+added as DV’s. The MPC model matrix is shown in Figure 5. 
+ 
+ 
+Table 1. Tissue machine MV’s with linear objective coefficients  
+MV Energy Fuel Units
+Linear Obj Coef
+Cost /  eng unit
+TAD1 Supply Temp Gas deg F 0.680
+TAD1 DE DP Electricity inch H2O 47.267
+TAD1 Gap Pres Electricity inch H2O -0.030
+TAD2 Exh Temp Gas deg F 5.858
+TAD2 DE DP Electricity inch H2O 40.249
+TAD2 Gap Pres Electricity inch H2O -16.415
+www.intechopen.com
+Page 10:
+ 
+Advanced Model Predictive Control 318 
+A large number of the MV’s in this control problem have an impact on the paper moisture, 
+both after TAD2, and at the reel; however each  MV uses a different energy source and has 
+different drying efficiency. Overall, since th ere are more MV’s than CV’s, and significant 
+cost differences between the MV’s, there is an opportunity for economic optimization in this 
+system. Table 1 shows the energy sources and di fferent energy cost efficiencies (Linear Obj 
+Coeff Cost/eng unit) associated with each MV. Economic optimization can be accomplished 
+by including these variables in the linear part  of the economic objective function given by 
+(10). 
+ 
+ 
+Fig. 4. Diagram of a tissue machine with CV’s, MV’s, and DV’s for MPC. 
+Once the economic cost function was added to the MPC, a plant trial was made. Figures 6-10 
+show the results of this trial. In Figure 7 it ca n be seen that prior to turning on the economic 
+optimizer (the period from 8:30 to 9:30) ther e was a relative cost of energy of 100. The 
+optimizer was turned on at 9:30. Initially th ere were some wind-up problems in the plant 
+DCS which were preventing the MPC from optimi zing. Once these were cleared, at 10:44, 
+the controller drove the process to the low co st operating point (from 10:44 to 12:30). The 
+relative cost of energy at this operating poin t was 98.8. In order to better interpret these 
+results, it is necessary to rank the costs of each MV on the common basis of Cost/% Moi. 
+This is accomplished by dividing the linear obje ctive coefficients given in Table 1 by their 
+respective process gains. These are shown in  Table 2, along with the MV high and low 
+limits, and the optimization behaviour. Looking ag ain at the Figures 8 and 9, it can be seen 
+www.intechopen.com
+Page 11:
+ 
+Model Predictive Control and Optimization for Papermaking Processes 
+319 
+that the highest costing MV’s are driven to their minimum operating points, and the lowest 
+costing MV’s are driven to their maximum op erating points. The TAD1 dry end differential 
+pressure is left as the MV that is within limits and actively controlling the paper moistures. 
+Figure 10 shows that throughout this trial,  the MV’s are optimized without causing any 
+disturbance to the CV’s. 
+ 
+ 
+ 
+ 
+Fig. 5. The MPC model matrix for the tissue machine control and optimization example  
+ 
+ 
+ 
+ 
+Fig. 6. Natural gas costs and electricity costs during the trial  
+Stock 
+Flow
+TAD1 
+Supply 
+Temp
+TAD1 DE 
+DP
+TAD1 
+Gap Pres
+TAD2 Exh 
+Temp
+TAD2 DE 
+DP
+TAD2 
+Gap Pres
+Yankee 
+Hood 
+Temp
+Yankee 
+Supply 
+Fan 
+Speed
+Machine 
+Speed
+Stock 
+Flow
+TAD1 
+Gap 
+Pressure
+Tickler 
+Refiner
+Dry Weight
+Reel 
+Moisture
+TAD 
+Moisture
+TAD1 
+Exhaust 
+Pressure
+www.intechopen.com
+Page 12:
+ 
+Advanced Model Predictive Control 320 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Fig. 7. Total costs during the trial  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Table 2. The MV cost rankings.  
+MV eng unit Low Limit High Limit
+Linear Obj 
+Coef 
+(Cost/eng unit)
+Process
+Gain 
+(%Moi/eng unit)
+Cost
+(Cost / % 
+Moi) Rank
+Optimization
+Behavior
+TAD1 Supply Temp deg F 300.0 450.0 0.68 -0.12 5.48 4 450 (max)
+TAD1 DE DP inch H2O 1.0 3.9 47.30 -5.12 9.24 3 controlling Moi
+TAD1 Gap Prs inch H2O 0.4 1.5 -0.03 1.95 0.02 6 0.4 (max)
+TAD2 Exh Temp deg F 175.0 250.0 5.86 -0.45 13.02 1 175 (min)
+TAD2 DE DP inch H2O 1.0 3.5 40.26 -3.14 12.82 2 1 (min)
+TAD2 Gap Prs inch H2O 0.2 1.5 -16.40 4.25 3.86 5 0.2 (max)
+www.intechopen.com
+Page 13:
+ 
+Model Predictive Control and Optimization for Papermaking Processes 
+321 
+ 
+Fig. 8. Manipulated variables during the trial  
+ 
+ 
+Fig. 9. Manipulated variables during the trial  
+www.intechopen.com
+Page 14:
+ 
+Advanced Model Predictive Control 322 
+ 
+Fig. 10. Controlled variables during the trial  
+3.4 Grade change strategies 
+Grade change is a terminology in MD control. It refers to the process of transitioning a paper 
+machine from producing one grade of paper pr oduct to another. One can achieve a grade 
+change by gradually ramping up a set of MV s to drive the setpoints of CVs from one 
+operating point to another. During a grad e change, the paper product is often off-
+specification and not sellable. It is important to develop an automatic control scheme to  
+coordinate the MV trajectories and minimize the grade change transi tion times and the off-
+spec product. An offline model predictive controller can be designed to produce CV and 
+MV trajectories to meet these grade change criteria. MPC is well-suited to this problem 
+because it explicitly considers MV and CV trajec tories over a finite horizon. By coordinating 
+the offline grade change controller (linear or  nonlinear) and an online MD-MPC, one can 
+derive a fast grade change that minimizes o ff-spec production. This section discusses the 
+design of MPC controllers for linear and nonlinear grade changes. 
+Figure 11 gives a block diagram of the grade change controller incorporated into an MD 
+control system. The grade change controller calc ulates the MV and CV trajectories to meet 
+the grade change criteria. This occurs as a separate MPC calculation performed offline so 
+that grade change specific process models can be used, and so that the MPC weightings can 
+be adjusted until the MV and CV trajectories meet the design criteria. The MV trajectories 
+are sent to the regulatory loop as a series of  MV setpoint changes. The CV trajectories are 
+sent as setpoint changes to the MD controller. If the grade change is performed with the MD 
+controller in closed-loop, additional corrections  to the MV setpoints are made to eliminate 
+any deviation of the CV from its target trajectory. 
+Controlled Variables
+11.6
+11.7
+11.8
+11.9
+12
+12.1
+12.2
+12.3
+12.4
+12.5
+12.6
+12.7
+8:34:07
+8:40:34
+8:47:01
+8:53:28
+8:59:55
+9:06:22
+9:12:49
+9:19:16
+9:25:43
+9:32:10
+9:38:37
+9:45:04
+9:51:31
+9:57:58
+10:04:25
+10:10:52
+10:17:19
+10:23:46
+10:30:13
+10:36:40
+10:43:07
+10:49:34
+10:56:01
+11:02:28
+11:08:55
+11:15:22
+11:21:49
+11:28:16
+11:34:43
+11:41:10
+11:47:37
+11:54:04
+12:00:31
+12:06:58
+12:13:25
+12:19:52
+Time
+DW (lb/ream)
+0
+5
+10
+15
+20
+25
+Moisture (%)
+ReelDwt PV ReelMoi PV ExpressMoi PV
+www.intechopen.com
+Page 15:
+ 
+Model Predictive Control and Optimization for Papermaking Processes 
+323 
+ 
+Fig. 11. Block diagram of MD-MPC control enhanced with grade change capability  
+The MV and CV trajectories are generated in a two step procedure. First there is a target 
+calculation step that generates the MV setpoint s required to bring the CV’s to their target 
+values for the new grade. Once the MV setpoint s are generated, then there is a trajectory 
+generation step where the MV and CV trajectories  are designed to meet the specifications of 
+the grade change. 
+The MV targets are generated from solving a set of nonlinear equations: 
+ 
+()
+()
+()
+()
+11
+dw dw 1 2 3 1 2 3
+22
+dw dw 1 2 3 1 2 3
+11
+moi moi 1 2 3 1 2 3
+22
+moi moi 1 2 3 1 2 3
+y f u ,u ,u , ,C ,C ,C , 0,
+y f u ,u ,u , ,C ,C ,C , 0,
+y f u ,u ,u , ,C ,C ,C , 0,
+y f u ,u ,u , ,C ,C ,C , 0,
+−… … =
+−… … =
+−… … =
+−… … =
+
+
+  (11) 
+Here y dw/ymoi represents the CV target for the new grade. The functions fሺ∙ሻ are the 
+models of dry weight and moisture. The process MV’s are denoted u i and model constants 
+are denoted C i. The superscripts indicate the same pa per properties measured by different 
+scanners. Since the number of MV’s and the numb er of CV’s is not necessarily equal, these 
+equations may have one, multiple or no solutions. To allow for all of these cases, the 
+problem is recast as: 
+ min୳ ౟Fሺuଵ ,u ଶ ,… ሻ, (12) 
+Subject to: 
+Gሺuଵ ,u ଶ ,… ሻ ൑Ͳ ,  
+Hሺuଵ ,u ଶ ,… ሻ =Ͳ ,  
+ 
+Grade Change 
+Controller 
+Process
+Scanner 
+R1
+R2
+MD - MPC 
+OperatorOperator 
+u1,OP 
+u2,OP y2 
+y1 uC1,SP u1,SP
+Δu1,GC
+u2,SPuC2,SP
+y1,SP 
+y1,SP y 2,SP 
+y2,SP 
+User Input
+www.intechopen.com
+Page 16:
+ 
+Advanced Model Predictive Control 324 
+Where Fሺ∙ሻ is a quadratic objective function formulated to find the minimum travel solution. 
+Hሺ∙ሻ represents the equality constraints given above, and Gሺ∙ሻ represents the physical 
+limitations of the CVs and MVs (high, low, and rate of change limits).   
+Once the MV targets have been generated, th e MV and CV trajectories are then designed. 
+Figure 12 gives a schematic representation of the trajectory generation algorithm. T he 
+process models are linearized (if necessar y) and then scaled and normalized for 
+application in an MPC controller. Process constraints such as the MV  and CV targets, and 
+the MV high and low limits are also given to the MPC controller. Internal controller 
+tuning parameters are then used to adjust th e MV and CV trajectories to meet the grade 
+change requirements.  
+ 
+ 
+Fig. 12. Diagram of MPC-based grade change trajectory generation.  
+3.4.1 Linear grade change 
+In a linear grade change, the MD  process models that are us ed in the MD-MPC controller 
+are also used as the models for determining the MD targets, and for designing the MD grade 
+change trajectories.  
+3.4.2 Nonlinear grade change 
+In a nonlinear grade change, a first principl es model may be used for the target and 
+trajectory generation. For example, a simple dry weight model is: 
+ mୢ୰୷ =K
+୯ ౩౪౥ౙౡ
+୴
+, (13) 
+ 
+MPC Module 
+Linearization Nonlinear Model 
+MPC Controller Process Model
+Scaling & 
+Normalization 
+Grade Change Constraints 
+•  MV physical limits 
+•  MV and CV targets 
+•  Customized Weights 
+CV Target 
+CV Trajectories 
+MV Trajectories 
+www.intechopen.com
+Page 17:
+ 
+Model Predictive Control and Optimization for Papermaking Processes 
+325 
+Where mୢ୰୷  is the paper dry weight, qୱ୲୭ୡ୩  is the thick stock flow, and v is machine speed. K 
+is the expression of a number  of process constants and values including fibre retention, 
+consistency, and fibre density. (Chu et al. 2008) gives a more detailed treatment of this dry 
+weight model.  
+(Persson 1998, Slätteke 2006, and Wilhelmsson 1995) are examples of first principles 
+moisture models that may be used. 
+3.4.3 Mill implementation results 
+In this section, some results of MPC-based grade changes for a fine paper machine are given. 
+The grade change is from a paper with a dry weight of 53 lb/3000ft
+2 (86 g/m 2) to a paper 
+with a dry weight of 44 lb/3000ft 2 (72 g/m2). Both paper grades have the same reel moisture 
+setpoint of 4.8%. For the grade change, stock flow, 6 th section steam pressure, and machine 
+speed are manipulated. 
+Figures 13 and 14 show a grade change perf ormed on the paper machine using linear 
+process models, and keeping the regular MPC in  closed-loop during the grade change. The 
+grade change was completed in 10 minutes, whic h is a significant improvement over the 22 
+minutes required by the grade change package of the plant’s previous control system. In 
+Figure 13, the CV trajectories are shown. Here it  can be seen that although there is initially a 
+small gap between the actual dry weight and the planned trajectory, the regular MPC takes 
+action with the thick stock valve (as shown in Figure 14) to quickly bring dry weight back on 
+target. The deviation in the reel moisture is m o r e  o b v i o u s .  T h i s  m i g h t  b e  e x p e c t e d  a s  t h e  
+moisture dynamics of the paper machine display more nonlinear behaviour for this range of 
+operations. The steam trajectory in Figure 14 is ramping up at its maximum rate and yet the 
+paper still becomes too wet during the initial pa rt of the grade change. This indicates that 
+the grade change package is aggressively push ing the system to achieve short grade change 
+times. 
+ 
+ 
+Fig. 13. CV trajectories under closed-loop GC with linear models 
+www.intechopen.com
+Page 18:
+ 
+Advanced Model Predictive Control 326 
+ 
+Fig. 14. MV trajectories under closed-loop GC with linear models 
+Figures 15 and 16 show a grade change performed on a high fidelity simulation of the fine 
+paper machine. This grade change uses a non linear process model, and the regular MPC is 
+k e p t  i n  c l o s e d - l o o p  d u r i n g  t h e  g r a d e  c h a n g e .  H e r e  i t  c a n  b e s e e n  t h a t  t h e  d u r a t i o n  o f  t h e  
+grade change is reduced to 8 minutes. Part of the improvement comes from using stock flow 
+setpoint instead of stock valve position, allo wing improved dry weight control. Another 
+improvement is that the planned trajectories a llow for some deviation in the reel moisture 
+that cannot be eliminated. Both dry weight and reel moisture follow their trajectories more 
+closely. At the end of the grade change, the nonlinear grade change package is able to 
+anticipate the need to reduce steam preventing the sheet from becoming dry.  
+ 
+ 
+Fig. 15. CV trajectories under closed-loop GC with nonlinear models 
+www.intechopen.com
+Page 19:
+ 
+Model Predictive Control and Optimization for Papermaking Processes 
+327 
+ 
+Fig. 16. MV trajectories under closed-loop GC with nonlinear models 
+4. Modelling, control and optimization of papermaking CD processes 
+To produce quality paper it is not enough that  the average value of paper weight, moisture, 
+caliper, etc across the width of the sheet rema ins on target. Paper properties must be 
+uniform across the sheet. This is the purpose of CD control.  
+4.1 Modelling of papermaking CD processes 
+The papermaking CD process is a large scaled two-dimensional process. It involves multiple 
+actuator arrays and multiple quality measur ement arrays. The process shows very strong 
+input-output off-diagonal coupling properties. An accurate CD model is the prerequisite for 
+an effective CD-MPC controller. We begin by discussing a model structure for the CD 
+process and the details of the model identification.  
+4.1.1 A two-dimensional linear system 
+The CD process can be modelled as a linear multiple actuator arrays and multiple 
+measurement arrays system,  
+  Yሺsሻ	= G(s)U(s)+D(s),  (14) 
+and 
+ Y(s)= ቎
+y
+ଵ ሺsሻ
+ڭ
+y୒ ౯ ሺsሻ
+቏ ,			Gሺsሻ = ቎
+Gଵଵ ሺsሻ … G ଵ୒ ౫ ሺsሻ
+ڭ
+G୒ ౯ ଵ ሺsሻ … G ୒ ౯ ୒ ౫ ሺsሻ
+቏,  U(s)=቎
+uଵ ሺsሻ
+ڭ
+u୒ ౫ ሺsሻ
+቏, (15) 
+www.intechopen.com
+Page 20:
+ 
+Advanced Model Predictive Control 328 
+where Yሺsሻ ∈ ℂ ሺ୒ ౯ ⋅୫ሻ  is the Laplace transformation of the augmented CD measurement 
+array. The element y୧ሺsሻ ∈ ℂ ୫ 	ሺi	 = ͳ, … , N ୷ ሻ is the Laplace transformation of the i th 
+individual CD measurement profile, such as dry weight, moisture, or caliper. N୷ 	is the total 
+number of the quality measurements, and m is  the number of elem ents of individual 
+measurement arrays. Uሺsሻ ∈ ℂ ሺ∑ ୬ ౠ
+ొ ౫
+ౠసభ ሻ is the Laplace transformation of the augmented 
+actuator setpoint array. The element u୨ሺsሻ ∈ ℂ ୬ ౠ	ሺj	 = ͳ … N ୳ ሻ is the Laplace transformation of 
+the jth individual CD actuator setpoint profile, such as the headbox slice, water spray, steam 
+box, or induction heater. N୳ 	is the total number of actuator beams available as MV’s, and n୨ 
+is the number of individual zones of the jth actuator beam. In genera l a CD system has the 
+same number of elements for all CD meas urement profiles, but different numbers of 
+actuator beam setpoints. D(s) 	∈ ℂ ሺ୒ ౯ ⋅୫ሻ  is the Laplace transfor mation of the augmented 
+process disturbance array. It represents process output disturbances.   
+G୧୨ሺsሻ ∈ ℂ ୫×୬ ౠ ( i	 = ͳ … N ୷ 	and	j	 = ͳ … N ୳ ሻ in (15) is the transfer matrix of the sub-system 
+from the j th actuator beam u୨ to the i th CD quality measurement 	y୧. The model of this sub-
+system can be represented by a spatial static matrix P୧୨ ∈ℝ ୫×୬ ౠ with a temporal dynamic 
+transfer function 	h୧୨ሺsሻ . In practice, 	h୧୨ሺsሻ  is simplified as a first-order plus dead time 
+system. Therefore, G୧୨ሺsሻ  is given by 
+ G୧୨ሺsሻ = P ୧୨h୧୨ሺsሻ = P ୧୨
+ଵ
+ଵା୘ ౦ ୱ
+eି୘ ౚ ୱ   (16) 
+where T୮  is the time constant and Tୢ  is the time delay. The static spatial matrix P୧୨ is a matrix 
+with n୨ columns, i.e., P୧୨ = [pଵ pଶp ୬ ౠ] and its kth column p୩  represents the spatial 
+response of the k th individual actuator zone of the j th actuator beam. As proposed in 
+(Gorinevsky & Gheorghe 2003), p୩ 	can be formulated by, 
+ 
+22
+kk
+22
+ǂ ((x x ) ǃω ) ǂ ((x x ) ǃω )
+k ωω kk
+g ππp{ e c os( ( (x x ) ǃω ))  ec os( ((x x ) ǃω ))}2 ωω
+−− −+−−
+=− − + − +   (17) 
+where x is the coordinate of CD measurem ents (CD bins), g is the process gain, ɘ  is the 
+response width, Ƚ  is the attenuation and Ⱦ  is divergence. x୩  is the CD alignment that 
+indicates the spatial relationship  between the centre of the k th individual CD actuator and 
+the center of the corresponding measurement responses. A fuzzy function may be used t o 
+model the CD alignment. Refer to (Gorinevsky & Gheorghe 2003) for the technical details.  
+Figure 17 illustrates the structure of the spatial response matrix P୧୨. The colour map on the 
+left shows the band-di agonal property of 	P୧୨; and the plot in the right shows the spatial 
+response of the individual spatial actuator p୩ . It can  b e se e n  th at each  in divi du al actu a tor 
+affects not only its own spatial zone area, but also adjacent zone areas. 
+4.1.2 Model identification 
+Model identification of the papermaking CD process is the proced ure to determine the 
+values of the parameters in (16, 17), i.e., the dynamic model parameters 	θ୘ ={ T୮ ,Tୢ }, the 
+spatial model parameters θେୈ =	{ g ,ɘ ,Ƚ ,Ⱦ } , and the alignment x୩ . An iterative identification 
+algorithm has been proposed in (Gorinev sky & Gheorghe 2003). As with MD model 
+identification, this algorithm is  an open-loop model identifica tion approach. Identification 
+experiment data are first collected by performing open-loop bump tests.  
+www.intechopen.com
+Page 21:
+ 
+Model Predictive Control and Optimization for Papermaking Processes 
+329 
+ 
+Fig. 17. The illustration to spatial response matrix P୧୨. 
+Figure 18 illustrates the logic flow of this algorithm. This nontrivial system identification 
+approach first estimates the overall dyna mic response and spatial response, and 
+subsequently identifies the dynamic model parameter θ
+୘  and the spatial model 
+parameter	θେୈ . h෠  in Figure 18 is the estimated finite impulse response (FIR) of the dynamic 
+model hሺsሻ  in (16). p ො in Figure 18 is the estimated steady state measurement profile, i.e., 
+overall spatial response. For easier notation , we omit the indexes i and j here. The key 
+concept of the algorithm is to optimize th e model parameters iteratively. Refer to 
+(Gorinevsky & Gheorghe 2003) for technical details of this algorithm, and (Gorinevsky & 
+Heaven, 2001) for the theoretical proof of the algorithm convergence.  
+ 
+ 
+Fig. 18. The schematic of the iterative CD system identification algorithm 
+The algorithm described above has been im plemented in a software package, named 
+IntelliMap
+TM, which has been widely used in pulp and paper industries. The tool executes 
+the open-loop bump tests automa tically and, at the end of the experiments, provides a 
+continuous-time transfer matrix model (def ined in (14)). For convenience, the MPC 
+controller design discussed in the next sectio n will use the state space model representation. 
+Conversion of the continuous-time transfer ma trix model into the discrete-time state space 
+model is trivial (Chen 1999) and is omitted here.  
+www.intechopen.com
+Page 22:
+ 
+Advanced Model Predictive Control 330 
+4.2 CD-MPC design 
+In this section, a state space realization of (14) is used for the MPC controller development, 
+ Xሺk + ͳሻ	 = 	AXሺkሻ + BȟUሺkሻ
+Yሺkሻ = 	CXሺkሻ + Dሺkሻ . (18) 
+Xሺkሻ ∈ ℝ ሺଶ⋅୒ ౯ ⋅୫ሻ , Yሺkሻ ∈ ℝ ሺ୒ ౯ ⋅୫ሻ , ȟUሺkሻ ∈ ℝ ሺ∑ ୬ ౠ
+ొ ౫
+ౠసభ ሻ,		andDሺkሻ ∈ ℝ ሺ୒ ౯ ⋅୫ሻ 	are the augmented 
+state, output, actuator move, and output disturbance arrays of the papermaking CD process 
+with multiple CD actuator beams and multiple quality measurement arrays. {A, B, C} are the 
+model matrices with compatible dimensions. Assume (A, B) is controllable and (A , C) is 
+observable. In this section, the objective function of CD-MPC is developed first. Then the CD 
+actuator constraints are incorporated in the objective function. Finally a fast QP solver is 
+presented for solving the large scale constrained CD-MPC optimization problem. How to 
+tune a CD-MPC controller is also covered in this section 
+4.2.1 Objective function of CD-MPC  
+The first step of MPC development is perfor ming the system output  prediction over a 
+certain length of prediction horizon. From the state space model defined in (18), we can 
+predict the future states, 
+ ࣪୅࣪୆ሺkሻ , (19) 
+where ሺkሻ ∈ ℝ ሺଶ⋅୒ ౯ ⋅୫⋅ୌ ౦ ሻ is the state prediction, ሺkሻ ∈ ℝ ሺୌ ౫⋅ ∑ ୬ ౠ
+ొ ౫
+ౠసభ ሻ is the augmented 
+actuator moves. ࣪୅  and ࣪୆  are the state and input prediction  matrices with the compatible 
+dimensions. H୮ 	and H୳  are the output and input prediction horizons, respectively.  
+The explicit expressions of the parameters in (19) are 
+ 
+pp up
+2
+AB
+H1 HHHp
+u
+A B0X(k 1|k)
+AB 0X(k 2|k) A
+(k) ,    ,    ,
+X(k H |k) AB A BA
+ΔU(k|k)
+ΔU(k 1|k)and Δ (k)
+ΔU(k H 1|k)
+−−
+
+ +    +   == =      +   
+
+ 
+
+ += 
+ +−
+
+
+  
+
+
+ 
+
+  (20) 
+The initial state X෡ ଴ ሺk|k − ͳሻ  at instant k can be estimated from the previous state estimation 
+X෡ ሺk − ͳሻ  and the previous actuator move		ȟUሺk − ͳሻ , i.e.,  
+ X෡ ଴ ሺk|k − ͳሻ	 = AX ෡ ሺk − ͳሻ + BȟUሺk − ͳሻ . (21) 
+The measurement information at instant k can be used to improve the estimation, 
+ X෡ ሺkሻ	 = X ෡ ଴ ሺk|k − ͳሻ + Lሺ Yሺkሻ 	 − 	CX෡ ଴ ሺk|k − ͳሻሻ,  (22) 
+where L∈ℝ ሺଶ⋅୒ ౯ ⋅୫ሻ×ሺ୒ ౯ ⋅୫ሻ  is the state observer matrix.  
+Replace the state Xሺkሻ  by its estimation X෡ ሺkሻ , and perform the output prediction ሺkሻ , 
+www.intechopen.com
+Page 23:
+ 
+Model Predictive Control and Optimization for Papermaking Processes 
+331 
+ ࣪ୡ࣪୅࣪ୡ࣪୆ሺkሻ , (23) 
+where ࣪ୡ ∈ℝ ሺ୒ ౯ ⋅୫⋅ୌ ౦ ሻ×ሺଶ⋅୒ ౯ ⋅୫⋅ୌ ౦ ሻ is the output prediction matrix, given by  
+ ࣪ୡC ሻ=൦
+Ͳ
+Ͳ
+ڭ
+C
+ሺkሻ = ൦
+Yሺk + ͳ|kሻ
+Yሺk + ʹ|kሻ
+ڭ
+Yሺk + H ୮ |kሻ
+൪. (24) 
+From the expression in (24), one can define the objective function of a CD-MPC problem, 
+ minሺ୩ሻࣳ୲୥୲ ||࣫భ
+ଶሺ k ሻ | |࣫మ
+ଶ࣯୲୥୲ ||࣫య
+ଶ +| | ℱୠሺkሻ||࣫ర
+ଶ . (25) 
+ࣳ୲୥୲ 	=	[ Y ୲୥୲
+୘ ,Y ୲୥୲
+୘Y ୲୥୲
+୘ ]୘  defines the measurement target s over the prediction horizon H୮ . 
+Similarly, ࣯୲୥୲ =[ U ୲୥୲
+୘ ,U ୲୥୲
+୘U ୲୥୲
+୘ ]୘  defines the input actuator setpoint targets over the 
+control horizon H୳ . ࣫ଵ࣫ଶ࣫ଷ࣫ସ ሻ	are the diagonal weighting matrices. ࣫ଵ  defines the 
+relative importance of the individual quality measurements. ࣫ଶ 	defines the relative 
+aggressiveness of the individual CD actuators. ࣫ଷ 	defines the relative deviation from the 
+targets of the indivi dual CD actuators. ࣫ସ 	defines the relative picketing penalty of the 
+individual CD actu ators. The matrix ℱୠ 	= 	 d i a g ሺ FୠF ୠ ) is the augmented actuator 
+bending matrix. The detailed definition of Fୠ  will be covered in Section 4.2.2. || ∙ ||ℛ೔
+ଶ  is the 
+square of weighted 2-norm, i.e., || ∙ ||ℛ೔
+ଶ = ሺ∙ሻ ் ℛ௜ሺ∙ሻ.  In general, ࣫ଵ࣫ଶ࣫ଷ࣫ସ ሻ	are used as the 
+tuning parameters for CD-MPC. 
+ሺkሻ  is the future input prediction. It can be expressed by  
+ ሺkሻ = ൦
+Uሺk|kሻ
+Uሺk + ͳ|kሻ
+ڭ
+Uሺk + H ୳ିଵ ሻ|kሻ
+൪ =൦
+I
+I
+ڭ
+I
+൪
+ด
+୍࣭
+Uሺk − ͳሻ +൦
+Ͳ
+Ͳ
+ڭ
+II I I
+൪
+ᇣ
+ᇧ ᇧ ᇧ ᇧ ᇤ ᇧ ᇧ ᇧ ᇧ ᇥ
+࣭୮
+ሺkሻ , (26) 
+where I∈ℝ ሺ∑ ୬ ౠ
+ొ ౫
+ౠసభ ሻ×ሺ ∑ ୬ ౠሻొ ౫
+ౠసభ  is the identity matrix. Insertin g (26) into (25) and replacing ሺkሻ  
+by ሺkሻ , the QP problem can be recast into 
+ minሺ୩ሻ
+ଵ
+ଶ
+࣯୘ሺkሻ + φ ୘ሺkሻ,  (27) 
+where Φ is the Hessian matrix and φ is the gradient matrix. Bo th can be derived from the 
+prediction matrices (࣪୅࣪୆࣪େ ሻ and weighting matrices (࣫ଵ࣫ଶ࣫ଷ࣫ସ ሻ.	 Refer to (Fan 2003) 
+for the detailed expressions of Φ and φ. 
+By solving the QP problem in (27), one can derive the predicted optimal array ሺkሻ . Only 
+the first component of ሺkሻ , i.e., ȟUሺkሻ,  is sent to the real process and the rest are rejected. 
+By repetition of this procedure, the optimal MV moves at any instant are derived for 
+unconstrained CD-MPC problems.  
+4.2.2 Constraints 
+In Section 4.2.1 the CD-MPC controller is form ulated as an unconstrained QP problem. In 
+practice the new actuator setpoints given by the CD-MPC controller in (27) should always 
+respect the actuator’s physical limits. In  other words, the hard constraints on ሺkሻ  should 
+be added into the problem in (27).  
+www.intechopen.com
+Page 24:
+ 
+Advanced Model Predictive Control 332 
+The CD actuator constraints include: 
+•  First and second order bend limits; 
+•  Average actuator setpoint maintenance; 
+•  Maximum actuator setpoints; 
+•  Minimum actuator setpoints; and  
+•  Maximum change of actuator setpoints between consecutive CD-MPC iterations.  
+Of these five types of actuator constraints, most of them are very common for the typical MPC 
+controllers, except for the bend limits which ar e special for papermaking CD processes. The 
+first and second bend limits define the allowable first and second order difference between the 
+adjacent actuator setpoints of the actuator beam. It typically applies to slice lips and induction 
+heaters to prevent the actuator beams from being overly bent or locally over-heated. The 
+bending matrix of the jth actuator beam, ܨ௕,௝  (N ୳ ሻ	can be defined by  
+ −
+ۏ
+ێ
+ێ
+ێ
+ێ
+ۍɁ ଵ,୨
+Ɂ ଶ,୨
+ڭ
+Ɂ ଶ,୨
+Ɂ ଵ,୨ے
+ۑ
+ۑ
+ۑ
+ۑ
+ې
+ถ
+ɀ ୠ,୨
+൑
+ۏ
+ێ
+ێ
+ێ
+ێ
+ۍͲ
+Ͳ
+Ͳ
+ڭ
+Ͳ . 5 − ͳ Ͳ
+ے
+ۑ
+ۑ
+ۑ
+ۑ
+ې
+ᇣ ᇧ ᇧ ᇧ ᇧ ᇧ ᇧ ᇧ ᇧ ᇧ ᇤ ᇧ ᇧ ᇧ ᇧ ᇧ ᇧ ᇧ ᇧ ᇧ ᇥ
+Fୠ,୨
+ۏ
+ێ
+ێ
+ێ
+ۍ
+uଵ,୨
+uଶ,୨
+ڭ
+u୬ ౠିଵ,୨
+u୬ ౠ,୨ے
+ۑ
+ۑ
+ۑ
+ې
+ᇣ ᇧ ᇤ ᇧ ᇥ
+u୨
+൑
+ۏ
+ێ
+ێ
+ێ
+ێ
+ۍɁ ଵ,୨
+Ɂ ଶ,୨
+ڭ
+Ɂ ଶ,୨
+Ɂ ଵ,୨ے
+ۑ
+ۑ
+ۑ
+ۑ
+ې
+ถ
+ɀ ୠ,୨
+, (28) 
+where Ɂ ଵ,୨  and Ɂ ଶ,୨  are the first order and the second order bend limit of the j th actuator beam 
+u୨. ɀ ୠ  andܨ௕,௝  define the bend limit vector and the bend limit matrix of the j th actuator u୨, 
+respectively. The bend limit matrix ܨ௕,௝  is not only part of the constraints, but also the 
+objective function in (27). In (27),	ℱୠ 	= 	 d i a g ሺ FୠF ୠ ሻand Fୠ 	= 	 d i a g ሺ Fୠ,ଵF ୠ,୒ ౫ ).  
+The individual bend limit constraint on the j th actuator beam u୨ in (28) can be extended to 
+the overall bend limit matrix Fୠ  for the augmented actuator setpoint array U, i.e.,  
+ ൤ Fୠ
+−Fୠ
+൨U ൑ ቂ ɀ ୠ
+ɀ ୠ
+ቃ (29) 
+where ɀ ୠ  is the overall bend limit vector, and ɀ ୠ =[ ɀ ୠ,ଵ
+୘ɀ ୠ,୒ ౫
+୘ ]୘ .   
+Similar to the bend limits, other types of actuat or physical constraints can be formulated as 
+the matrix inequalities,   
+ 
+ۏ
+ێ
+ێ
+ێ
+ێ
+ۍF୫ୟ୶
+−F୫୧୬
+Fୟ୴୥
+−Fୟ୴୥
+F∆୙
+−F∆୙ے
+ۑ
+ۑ
+ۑ
+ۑ
+ې
+U൑
+ۏ
+ێ
+ێ
+ێ
+ێ
+ۍ
+ɀ ୫ୟ୶
+ɀ ୫୧୬
+ɀ ୟ୴୥
+ɀ ୟ୴୥
+ɀ ∆୙
+ɀ ∆୙ے
+ۑ
+ۑ
+ۑ
+ۑ
+ې
+30) 
+where the subscripts “max ”, “min”, “avg”, and “ ∆U" stand for the maximum, minimum, 
+average limit, and maximum setpoint changes between two consecutive CD-MPC iterations 
+of the augmented actuator setpoint array, U. It  is straightforward to derive the expressions 
+of F୫ୟ୶ , F୫୧୬ , Fୟ୴୥ , F∆௎ . Therefore the detailed discussion is omitted.  
+From (29) and (30), one can see that the cons traints on the augmente d actuator setpoint 
+array U can be represented by a linear matrix inequality, i.e., 
+ FU ൑ ɀ,  (31) 
+www.intechopen.com
+Page 25:
+ 
+Model Predictive Control and Optimization for Papermaking Processes 
+333 
+where F and ɀ  are constant coefficients used to combine the inequalities in  (29) and (30) 
+together. 
+(26) is inserted into (31). The constraint in (31)  is then added to the objective function in (27). 
+Finally the CD-MPC controller is formulated as a constrained QP problem, 
+ subject	to,
+min
+ሺ୩ሻ
+ଵ
+ଶ
+࣯୘ሺkሻ + ϕ ୘ሺkሻ
+୍࣭࣭୮ሺkሻሻ ൑ Ȟ
+, (32) 
+where F ሻ and ɀ ሻ . By solving the QP problem in (32), the 
+optimal actuator move at instant k can be achieved. 
+4.2.3 CD-MPC tuning 
+Figure 19 illustrates the implem entation of the CD-MPC controller. First, the process model 
+is identified offline from inpu t/output process data. Then th e CD-MPC tuning algorithm is 
+executed to generate optimal tuning paramete rs. Subsequently these tuning parameters are 
+deployed to the CD-MPC controller. The contro ller generates the optimal actuator setpoints 
+continuously based on the feedback measurements.  
+ 
+ 
+Fig. 19. The implementation of the CD-MPC controller  
+The objective for CD-MPC tuning algorithm in Figure 19 is to determine the values 
+of࣫
+ଵ࣫ଶ࣫ଷ࣫ସ  i n  ( 2 5 ) .  I t  h a s  b e e n  p r o v e n  t h a t࣫ଵ 	defines the relative importance of 
+quality measurements,࣫ଶ  defines the dynamic characteristics of the closed-loop CD-MPC 
+system, and࣫ଷ 	and࣫ସ 	define the spatial frequency characteristics of the closed-loop CD-
+MPC system.࣫ଷ 	is for the high spatial frequency behaviours and ࣫ସ 	is for the low spatial 
+frequencies (Fan 2004).  
+Strictly speaking, the CD-MPC tuning problem requires analyzing the robust stability of a 
+closed-loop control system with nonlinear opti mization. An analytic solution to the QP 
+www.intechopen.com
+Page 26:
+ 
+Advanced Model Predictive Control 334 
+problem in (32) is the prerequisite for the CD-MPC tuning algorithm. However, in practice it 
+is very challenging; almost impossible to derive the explicit solution to  (32) due to the large 
+size of CD-MPC problems. A novel two-dimensio nal loop shaping approach is proposed in 
+(Fan 2004) to overcome limitations for large scaled MPC systems. The algorithm consists of 
+four steps: 
+Step 1. Ignore the inequality constraint in (32) su ch that the closed-loop system given by 
+(27) is linear. 
+Step 2. Compute the closed-loop transfer function  of the unconstrained CD-MPC system 
+given by (27). 
+Step 3. By performing two-dimensional loop shapin g, optimize the weighting matrices to 
+get the best trade off between the perfor mance and robustness of the unconstrained 
+CD-MPC system. 
+Step 4. Finally, re-introduce the constraint in (32) for implementation.  
+Figure 20 shows the closed-loop diagram of  the unconstrained CD-MPC system with 
+unstructured model uncertainties. The derivation of the pre-filtering matrix K
+୰  and feedback 
+controller K is standard and can be found in (Fan 2003).  
+ 
+ 
+Fig. 20. Closed-loop diagram of unconstrained CD-MPC system with unstructured model 
+uncertainties 
+From the small gain theory (K halil 2001), the linear closed-loo p system in Figure 20 is 
+robustly stable if the closed-loop in (32) is nominally stable and,  
+ ||G
+୳ୢ ሺzሻ ᇞ ୋ ሺzሻ|| ஶ ൏ͳ⇐σ ഥሺG ୳ୢ ሺe୨ன ሻሻ ൏
+ଵ
+஢ഥ ሺᇞ ృ ሺୣ ౠಡ ሻሻ ,∀ ɘ . (33) 
+Here G୳ୢ ሺzሻ  is the control sensitivity function which defines the linear transfer function from 
+the output disturbance D(k) to the actuator setpoint U(k),  
+ G୳ୢ ሺzሻ = Kሺzሻ[I − GሺzሻKሺzሻ] ିଵ . (34) 
+The sensitivity function of the system in Figure  20 defines the linear transfer function from 
+the output disturbance D(k) to the output Y(k), 
+G୷ୢ ሺzሻ = [I − GሺzሻKሺzሻ] ିଵ . 
+By properly choosing th e weighting matrices ࣫ଵ  to࣫ସ , both the control sensitivity function 
+G୳ୢ ሺzሻ  and the sensitivity function G୷ୢ ሺzሻ  can be guaranteed stable, and also the small gain 
+condition in (33) can be satisfied. The tw o-dimensional loop shaping approach uses G୳ୢ ሺzሻ  
+and G୷ୢ ሺzሻ  to analyze the behaviour of the closed-loop system in Figure 20.  
+It has been shown that both G୳ୢ ሺzሻ  and G୷ୢ ሺzሻ  can be approximated as rectangular circulant 
+matrices. One important property of circulant matrixes is that  the circulant matrix can be 
+www.intechopen.com
+Page 27:
+ 
+Model Predictive Control and Optimization for Papermaking Processes 
+335 
+block-diagonalized by left- and right-multiplying Fourier matrices. Fourier matrices 
+multiplication is equivalent to performing the standard discrete Fourier transformation . 
+Therefore, the two-dimensional frequency representation of G୳ୢ ሺzሻ  and G୷ୢ ሺzሻ  can be 
+obtained by, 
+ g ො୳ୢ ሺɋ, e ୨ன ሻ=F ୬ G୳ୢ ሺe୨ன ሻF୫ୌ , and		g ො୷ୢ ሺɋ, e ୨ன ሻ=F ୫ G୷ୢ ሺe୨ன ሻF ୫ୌ , (35) 
+where ɋ  represents the spatial frequency. F୫  and F୬  are m-points and n-points Fourier 
+matrices, respectively. The detailed definitions of Fourier matrices can be found in (Fan 
+2004). The two-dimensional frequent representation g ො୳ୢ ሺɋ, e ୨ன ሻ and g ො୷ୢ ሺɋ, e ୨ன ሻ are block 
+diagonal matrices. The singular values of g ො୳ୢ ሺɋ, e ୨ன ሻ and g ො୷ୢ ሺɋ, e ୨ன ሻ are directly linked to 
+the spatial frequencies.  
+Instead of tune g ො୳ୢ ሺɋ, e ୨ன ሻ and g ො୷ୢ ሺɋ, e ୨ன ሻ in full ɋ	and	ɘ  frequency ranges, two dimensional 
+loop shaping approach decouples the spatial tuning and dynamic tuning by firstly tu ning 
+the controller at zero spatial frequency, i.e., setting ɋ=Ͳ , and then tuning the controller at 
+zero dynamic frequency, i.e., setting ɘ=Ͳ . The theoretical proof of this strategy can be 
+founded in (Fan 2004).  
+From spatial tuning, the value of the weighting matrices࣫ଷ࣫ସ  can be determined, and 
+from the dynamic tuning, the value of ࣫ଶ  are determined. ࣫ଵ , as mentioned above, defines 
+the relative importance of quality measurements and its value is defined by a CD-MPC user.  
+In practice, the pr ocess gain matrix P୧୨ in (16) is ill-conditioned. Similar to MD-MPC tuning, 
+the scaling matrices have to be applied before tuning the controller. A scaling approach  
+discussed in (Lu 1996) is used by CD-MPC to  reduce the condition number of the gain 
+matrices.   
+4.2.4 Fast QP solver 
+The technical challenge of the CD-MPC optimization is how to solve the problem in (32) 
+efficiently and accurately. The typical scanning rate of the paper machine is 10 - 30 seconds.  
+Also considering the time cost of software implementation and data acquisition, the 
+computation time of the problem in (32) is typically limited to 5 to 10 seconds.  
+Different optimization techniques have been developed to solve QP problems efficiently, 
+such as the active set method, interior point method, QR factorization, etc. This section 
+presents a fast QP solver, called QPSchur, which is specifically designed to solve a large 
+scaled CD-MPC problem. QPSchur is a dual space algorithm, wher e an unconstrained 
+optimal solution is found first and violated constraints are added un til the solution is 
+feasible (Bartlett 2002).  
+Let’s consider the Lagrangian of the constrained QP in (32) 
+ ɉሻ =
+ଵ
+ଶ
+࣯୘ሺkሻ + ϕ ୘ሺkሻ + ɉ ୘ ሺɌ ୘ሺkሻ − ɗሻ,  (36) 
+where Ɍ= ࣭୮୘ 	ℱ୘  and ୍࣭Uሺk − ͳሻ.  In (36), ሺkሻ  is called the primary variable and 
+ɉ൑Ͳ  is called as the dual variable (also known as the Lagrangian variable).  
+At the starting point, QPSchur ignores all the constraints in (32) and solves unconstrained 
+QP problem. This is equivalent to set the dual variable ɉ=Ͳ . By this means, the initial 
+optimal solution ࣯∗ሺkሻ  is determined,  
+ ࣯∗ሺkሻ 	 = −Φ ିଵ ϕ. (37) 
+www.intechopen.com
+Page 28:
+ 
+Advanced Model Predictive Control 336 
+If ࣯∗ሺkሻ  satisfies all the inequality constraints, i.e., Ɍ୘࣯∗ሺkሻ ൑ ɗ , then ࣯∗ሺkሻ  is the 
+optimal solution, i.e. ࣯୭࣯∗ሺkሻ . The first elements of ȟU ୭ ሺkሻ  are sent to the real 
+process, and the CD-MPC optimization stops the search iteration.  
+If ࣯∗ሺkሻ  violates one or more of the inequality constraints in (32), all the violation 
+inequalities are noted, such that  
+ Ɍୱ୳ୠ
+୘࣯∗ሺkሻ ൒ ɗ ୱ୳ୠ , (38) 
+where ሺɌ ୱ୳ୠ
+୘ , ɗ ୱ୳ୠ ሻ is the violating subset of the inequality constraints in (32), and called the 
+active set matrix and the active  set vector, respectively. The La grangian in (36) is redefined 
+by using ሺɌ ୱ୳ୠ
+୘ , ɗ ୱ୳ୠ ሻ. The Karush-Kuhn-Tucker (KKT) condition of the updated Lagrangian 
+is,  
+ ቈ ΦɌ ୱ୳ୠ
+Ɍୱ୳ୠ
+୘ Ξ
+ሺkሻ
+ɉ ୱ୳ୠ
+൨=൤ −ϕ
+ɗ ୱ୳ୠ
+൨, (39) 
+Here Ξ=Ͳ  for the first searching iteration. Since Φ is non-singular (refer to Fan 2003), the 
+problem in (39) can be solved by using Gaussian elimination. The Schur complement of the 
+block Ξ is given by 
+ 	ॺ = Ξ − 	 Ɍ ୱ୳ୠ
+୘ Φିଵ Ɍୱ୳ୠ . (40) 
+The Schur complement theorem guarantees that ॺ  is non-singular if the Hessian matrix Φ is 
+non-singular. From ॺ , (39) can be solved by 
+ 
+ɉ ୱ୳ୠ =ॺ ିଵ ሺɗ ୱ୳ୠ +Ɍ ୱ୳ୠ
+୘ Φିଵ ϕሻ
+=ॺ ିଵ ሺɗ ୱ୳ୠ +Ɍ ୱ୳ୠ
+୘࣯∗ሺkሻሻ
+ሺkሻ = 	 Φ ିଵ ሺ−ϕ − Ɍ ୱ୳ୠ ɉ ୱ୳ୠ ሻ
+ . (41) 
+The inequality constraints in (32) are re-evalu ated, and the new active constraints (violated 
+constraints) and the positive dual variables inequalities are added into the subset pair ሺɌ ୱ୳ୠ
+୘ , 
+ɗ ୱ୳ୠ ሻ. The KKT condition of (39) is updated to derive  
+ ቈ ΦɌ መୱ୳ୠ
+Ɍመୱ୳ୠ
+୘ሺkሻ
+ɉ෠ ୱ୳ୠ
+൨=൤ −ϕ
+ɗ෡ ୱ୳ୠ
+൨, (42) 
+where  
+ Ɍመୱ୳ୠ =[ Ɍ ୱ୳ୠ ,Ɍ ୬ୣ୵ ], 	Ξ෡ =൤ Ξρ
+ρ୘ ɖ ൨,ɉ෠ ୱ୳ୠ =൤ ɉ ୱ୳ୠ
+ɉ ୬ୣ୵
+൨,a n d 	 ɗ෡ ୱ୳ୠ =൤ ɗ ୱ୳ୠ
+ɗ ୬ୣ୵
+൨. (43) 
+In the same fashion, the Schur complement of the block Ξ෠ can be represented by, 
+ 
+	ॺ෡ =Ξ෠ −	Ɍመୱ୳ୠ
+୘ Φିଵ Ɍመୱ୳ୠ
+=൤ Ξρ
+ρ୘ ɖ ൨−ቈ Ɍୱ୳ୠ
+୘
+Ɍ୬ୣ୵୘ ቉Φ ିଵ [Ɍୱ୳ୠ ,Ɍ ୬ୣ୵ ]
+=ቈ ॺρ − Ɍୱ୳ୠ
+୘ Φିଵ Ɍ୬ୣ୵
+ρ୘ −Ɍ ୬ୣ୵ Φିଵ Ɍୱ୳ୠ
+୘ ɖ−Ɍ ୬ୣ୵୘ Φିଵ Ɍ୬ୣ୵
+቉
+ . (44) 
+www.intechopen.com
+Page 29:
+ 
+Model Predictive Control and Optimization for Papermaking Processes 
+337 
+From (44), the new Schur complement ॺ෡  can be easily derived from ॺ . The Schur 
+complement update requires only multiplication with Φିଵ  that is calculated in the initial 
+search step and stored for reuse. This feature makes the SchurQP much faster than a 
+standard QP solver. Removing the non-active  constraints (zero dual variables) of each 
+search step is achieved easily: the columns of the Schur complement ॺ෡  corresponding to the 
+non-active constraints is removed before pursuing the next search iteration.    
+At the current search iteration, if all the inequality constraints in (32) and the sign of dual 
+variables are satisfied, the solution to (42) will be the final optimal solution of the CD-MPC 
+controller, i.e., 
+ 	ɉ෡ ୱ୳ୠ =ॺ෡ ିଵ ሺɗ෡ ୱ୳ୠ +Ɍመୱ୳ୠ
+୘࣯∗ሺkሻሻ
+࣯୭ ሺkሻ = 	 Φ ିଵ ሺ−ϕ − Ɍመୱ୳ୠ ɉ෠ ୱ୳ୠ ሻ   (45) 
+ȟU ୭ ሺkሻ  (the first component of the optimal solution ࣯୭ ሺkሻ ) is sent to the real process, and a 
+new constrained QP problem is formed at the end of the next scan.   
+4.3 Mill implementation results 
+CD-MPC has been implemented in Honeywell’s quality control system (QCS) and widely 
+deployed on different types of paper mills including fine paper, newsprint, liner board, and 
+tissue, etc. In this chapter, a CD-MPC application for a fine paper machine will be used as an 
+example to demonstrate the effectiveness of the CD-MPC controller.  
+4.3.1 Paper machine configuration 
+The paper machine discussed here is a fine paper machine, equipped with three CD actuator 
+beams and two measurement scanner frames. The CD actuators include headbox slice lip (63 
+zones), infrared dryer (40 zones), and induction heater (79 zones). The two scanner frames 
+hold the paper quality gauges for dry weight, moisture, and caliper. Each measurement 
+profile includes 250 measurement points with  the measurement interval equal to 25.4 mm 
+(CD bin width). The production range of this machine is from 26 gsm (gram per square 
+meter) to 85 gsm. The machine speed varies from 2650 feet per minute (13.5 meter/second) 
+to 3100 feet per minute (15.7 meter/second). The scanning rates of the two scanners are 32 
+and 34 seconds, respectively. In order to capture the nonlinearity of the process, three model 
+groups are setup to represent the products of light weight paper, medium weight paper, 
+and heavy weight paper, respectively. All three CD actuator be ams and three quality 
+measurement profiles are included into the CD-MPC controller. In this section, the m edium 
+weight scenario is used to illustrate the control performance of the CD-MPC controller.  
+4.3.2 Multiple actuator beams and multiple quality measurements model 
+Figure 21 shows the two-dimensional process models from the slice lip actuators (Autoslice) 
+to the measurements of dry weight, moisture and caliper profiles. The system identifica tion 
+algorithm discussed in Section 4.1.2 is used to derive these models. The plots on the left are 
+the spatial responses, and the plots on the right are the dynamic responses. The purp le 
+profiles are the average of the real process data, and the white profiles are the estimated 
+profiles based on identified process model. It can be seen from comparison to the model for 
+Autoslice to caliper that the models for Autosl ice to dry weight and to moisture have high 
+model fit. In general, the bump test with a larger bump magnitude and longer bump 
+duration will lead to a more accurate process model (better model fit). However, the open-
+www.intechopen.com
+Page 30:
+ 
+Advanced Model Predictive Control 338 
+loop bump tests degrade the quality of the fi nished product and excessive bump tests are 
+always prevented. The criterion of the CD model identification is to provide a process model 
+accurate enough for a CD-MPC controller.  
+From the model identification results in Figu re 21, we can see the strong input-output 
+coupling properties of papermaking CD processe s. The response width from slice lip to dry 
+weight equals to 226.8mm. This is equivalent to 2.3 times the zone width of the slice lip CD 
+actuator. Therefore, each individual zone of the slice lip affects not only its own spatial zone 
+but also adjacent zones. As we discussed above, a CD-MPC process has two-fold process 
+couplings: one is the coupling between differe nt actuator beams; and the other is the 
+coupling between the different zones of the same  actuator beams. Considering these strong 
+coupling characteristics, MPC strategy is a good candidate for CD control design.   
+  
+ 
+Fig. 21. The multiple CD actuator beams and quality measurement model display  
+4.3.3 Control performance of the CD-MPC controller 
+Table 3 summarizes the performance comparis on between the CD-MPC controller and the 
+traditional single-input-single-output (SISO) CD controller (a Dahlin controller). Although 
+traditional CD control is still quite common in paper mills, CD-MPC is becoming more and 
+more popular. The significant performance im provement can be observed after switching 
+CD control into multivariable CD-MPC.  
+www.intechopen.com
+Page 31:
+ 
+Model Predictive Control and Optimization for Papermaking Processes 
+339 
+Paper Properties Traditional CD
+Control ʹσ
+Multivariable CD-MPC 
+Control ʹσ Improvement (%) 
+Dry Weight (gsm) 0.40 0.24 40% 
+Moisture (%) 0.31 0.19 39% 
+Caliper (mil) 0.032 0.025 22% 
+Table 3. Traditional CD versus CD-MPC 
+Figures 22–24 provide a visual performanc e comparison for the different quality 
+measurements in both spatial do main and spatial frequency doma in. It can be seen that the 
+peak-to-peak values (the proxy of 	ʹσ
+େୈ  indexes) are smaller when using the CD-MPC 
+controller. Also the controllable disturbances (the disturbances with the spatial frequency 
+less than Xc) are effectively rejected by the CD-MPC controller. Here X͵db  represents the 
+spatial frequency where the spatial process power drops to 50% of the maximum spatial 
+power over the full spatial frequency band, Xc represents the frequency where the spatial 
+power drops to 4% of the maximum power, and ͳ/ʹXa  represents the Nyquist frequency. 
+ 
+ 
+Fig. 22. Performance comparison of dry weight profiles  
+ 
+ 
+Fig. 23. Performance comparison of moisture profiles  
+TC MPC 
+www.intechopen.com
+Page 32:
+ 
+Advanced Model Predictive Control 340 
+ 
+Fig. 24. Performance comparison of caliper profiles  
+5. Conclusion and perspective 
+We have seen that MPC has a number of a pplications in paper machine control. MPC 
+performs basic MD control, and allows for enhanced MD-MPC control that incorporates 
+economic optimization, and orchestrates transitions between paper grades. MPC can also be 
+used for CD controls, using a carefully chosen solution technique to handle the large scale 
+nature of the problem within the required time scale.  
+While MD-MPC provides robust and responsive control, and also easily scales to demanding 
+paper machine applications with larger numbers of CV’s and MV’s. The MD-MPC formulation 
+may also be augmented with an economic objective function so that paper machine 
+operational efficiency can be optimized (m aximum production, minimum energy costs, 
+maximizing filler to fibre ratio etc.) while all quality variables continue to be regulated.  
+In the future as new online sensors, such as the extensional stiffness sensor, gain acceptance 
+additional quality variables can be adding to MD-MPC. In the case of extensional stiffness, 
+this online strength measurement could allow economic optimization to minimize fibre use 
+while maintaining paper strength.  
+The papermaking CD process is a large scaled two-dimensional system. It shows strong 
+input-output coupling properties. MPC is a standard technique in controlling multivariable 
+systems, and has become a standard advanced control strategy in papermaking systems. 
+However, there are several barriers for the acce ptance of CD-MPC by mill personnel: one is 
+the novel multivariable control concept and the other is the non-trivial tuning technique. 
+Commercial offline tools, such as IntelliMap,  facilitate the acceptance of CD-MPC by 
+providing automatic model identification an d easy-to-use offline CD-MPC tuning. Such 
+packages enable the CD-MPC users to review the predicted CD steady states before they 
+update their CD control to CD-MPC (Fan et al. 2005). CD-MPC has been successfully 
+deployed in over 70 paper mills and applied to practically all types of existing CD processes 
+from fine paper, to board, to newsprints, to tissues, etc. Without doubt, CD-MPC will have a 
+significant impact in papermaking CD control applications over the next decade. 
+CD-MPC offers the significant capability to include multiple CD actuator arrays and 
+multiple CD measurement arrays into one single CD controller. The next generation CD-
+TC MPC 
+www.intechopen.com
+Page 33:
+ 
+Model Predictive Control and Optimization for Papermaking Processes 
+341 
+MPC applications are most likely to include non-standard CD measurement, such as fibre 
+orientation, gloss, web formation, and web porosity into the existing CD-MPC framework. 
+A successful CD-MPC application for fibre orientation control has been reported in (Chu et 
+al. 2010a). However there still exist technical ch allenges of controlling non-standard paper 
+properties by using CD-MPC; fo r example, the derivation of accurate parametric models 
+and the effectiveness of CD-MPC tuners for non-standard CD measurements.  
+In the current CD-MPC framework, system identification and controller design are clearly  
+separated. The efforts towards integrating syst em identification and controller design may 
+bring significant benefits to CD control. Online CD model identification has drawn 
+extensive attention in both academia and industries. A closed-loop CD alignment 
+identification algorithm is pres ented in (Chu et al. 2010b). Closed  loop identification of the 
+entire CD model remains an open problem.   
+6. References 
+Backström, J., & Baker, P. (2008). A Benefit Analysis of Model Predictive Machine 
+Directional Control of Paper Machines, in  Proc Control Systems 2008, Vancouver, 
+Canada, June 2008. 
+Backström, J., Gheorghe, C., St ewart, G., & Vyse, R. (2001). Constrained model predictive 
+control for cross directional multi-array processes. In Pulp & Paper Canada, May 
+2001, pp. T128– T102. 
+Backström, J., Henderson, B., & Stewart G. ( 2002). Identification and Multivariable Control 
+of Supercalenders, in Proc. Control Systems 2002, Stockholm, Sweden, pp 85-91. 
+Bartlett, R., Biegler L., Backst röm, J., & Gopal, V. (2002). Quadratic programming algorithm 
+for large-scale model predictive control, in Journal of Process Control, Vol. 12, pp. 
+775 – 795.  
+Bemporad, A., & Morari, M. (2004). Robust model predictive control: A survey. In Proc. of 
+European Control Conference, pp. 939–944, Porto, Portugal. 
+Chen, C. (1999), Linear Systems Theory and Design. Oxford University Press, 3rd Edition.  
+Chu, D. (2006). Explicit Robust Model Predicti ve Control and Its Applications. Ph.D. Thesis, 
+University of Alberta, Canada.  
+Chu, D., Backström J., Gheorghe C., Lahouaoula, A., & Chung, C. (2010a). Intelligent Closed 
+Loop CD Alignment, in Proc Contro l System 2010, pp. 161-166, Stockholm, 
+Sweden, 2010.   
+Chu, D., Choi, J., Backström, J., & Baker, P.  (2008). Optimal Nonlinear Multivariable Grade 
+Change in Closed-Loop Operations, in Proc Control Systems 2008, Vancouver, 
+Canada, June 2008.  
+Chu, D., Gheorghe C., Backström J., Nasl und, H., & Shakespeare, J. (2010b). Fiber 
+Orientation Model and Control, pp.202 – 207, in Proc Control System 2010, 
+Stockholm, Sweden, 2010. 
+Chu, S., MacHattie, R., & Backström, J.  (2010). Multivariable Control and Energy 
+Optimization of Tissue Machines, In Proc. Control System 2010, Stockholm, 
+Sweden, 2010. 
+Duncan, S. (1989). The Cross-Directional Control of Web Forming Process. Ph.D. Thesis, 
+University of London, UK.  
+Fan, J. (2003). Model Predictive Control For Mu ltiple Cross-directional Processes : Analysis, 
+Tuning, and Implementation, Ph.D. Thesis, University of British Columbia, 
+Canada. 
+www.intechopen.com
+Page 34:
+ 
+Advanced Model Predictive Control 342 
+Fan, J., Stewart, G., Dumont G., Backström J., & He P. (2005) Approximate steady-state 
+performance prediction of large-scale constrained model predictive control 
+systems, in IEEE Trans on Control System Technology, Vol. 13, pp.884 – 895. 
+Fan, J., Stewart, G., & Dumont G. (2004)  Two-dimensional frequency analysis for 
+unconstrained model predictive control of cross-directional processes, in 
+Automatica, Vol. 40, pp. 1891 – 1903.   
+Froisy, J. (1994). Model predictive control: Past, present and future. In ISA Transactions, Vol. 
+33, pp. 235–243. 
+Garcia, C., Prett, D., & Morari, M. (1989). Model predictive control: Theory and practice - a 
+survey. In Automatica, Vol. 25, pp. 335–348. 
+Gavelin, G. (1998). Paper Machine Design an d Operation. Angus Wilde Publications, 
+Vancouver, Canada 
+Gheorghe, C., Lahouaoula, A, Backström J., & Baker P. (2009). Multivariable CD control of a 
+large linerboard machine utilizing multiple multivariable MPC controllers, in Proc. 
+PaperCon ’09 Conference, May, SL, USA. 
+Gorinevsky, D., & Gheorghe C. (2003). Identificati on tool for cross-directional processes, in 
+IEEE Trans on Control Systems Technology, Vol. 11, 2003 
+Gorinevsky, D., & Heaven, M. (2001). Performa nce-optimized applied identification of 
+separable distributed-parameter processes,” in IEEE Trans on Automatic Control, 
+Vol. 46, pp. 1584 -1589 
+Khalil H. (2001). Nonlinear Systems, Prentice Hall, 3rd Edition. 
+Ljung, L. (1999). System Identifi cation Theory for the User (2nd  edition), Prentice Hall PTR, 
+0-13-656695-2, USA. 
+Lu, Z. (1996). Method of optimal scaling of variables in a multivariable controller utilizing 
+range control, U.S. Patent 5,574,638. 
+MacArthur, J.W. (1996). RMPCT : A New Approach To Multivariable Predictive Control For 
+The Process Industries, in Proc Control Systems 1996, Halifax, Canada, April 1996. 
+Morari, M., & Lee, J. (1999). Model predictive co ntrol: Past, present and future. In Computer 
+and Chemical Engineering, Vol. 23, pp. 667–682. 
+Persson, H. (1998). Dynamic mo delling and simulation of multicylinder paper dryers, 
+Licentiate thesis, Lund Institute of Technology, Sweden. 
+Qin, S., & Badgwell, T. (2000). An overview  of nonlinear model predictive control 
+applications, in F. Allgöwer and A. Zheng (eds), Nonlinear Predictive Control, 
+Birkhäuser, pp. 369–393. 
+Qin, S., & Badgwell, T. (2003). A Survey of in dustrial model prediction control technology, 
+in Control Engineering Practice, Vol. 11, pp. 733–764. 
+Rawlings, J. (1999). Tutorial: Mo del predictive control technolo gy. In Proc. of the American 
+Control Conference, pp. 662 –676, San Diego, California. 
+Slätteke, O. (2006). Modelling and Control of  the Paper Machine Drying Section, Ph.D. 
+thesis, Lund University, Sweden. 
+Smook, G. (2002). Handbook for Pulp and Pa per Technologists (Third Edition), Angus 
+Wilde Publications, Vancouver, Canada 
+Wilhelmsson, B. (1995). An experimental and theoretical study of multi-cylinder paper 
+drying, Lund Institute of Technology, Sweden. 
+www.intechopen.com
+Page 35:
+Advanced Model Predictive Control
+Edited by Dr. Tao ZHENG
+ISBN 978-953-307-298-2
+Hard cover, 418 pages
+Publisher InTech
+Published online 24, June, 2011
+Published in print edition June, 2011
+InTech Europe
+University Campus STeP Ri 
+Slavka Krautzeka 83/A 
+51000 Rijeka, Croatia 
+Phone: +385 (51) 770 447 
+Fax: +385 (51) 686 166
+www.intechopen.com
+InTech China
+Unit 405, Office Block, Hotel Equatorial Shanghai 
+No.65, Yan An Road (West), Shanghai, 200040, China 
+Phone: +86-21-62489820 
+Fax: +86-21-62489821
+Model Predictive Control (MPC) refers to a class of  control algorithms in which a dynamic process mode l is
+used to predict and optimize process performance. F rom lower request of modeling accuracy and robustne ss
+to complicated process plants, MPC has been widely accepted in many practical fields. As the guide for
+researchers and engineers all over the world concer ned with the latest developments of MPC, the purpos e of
+"Advanced Model Predictive Control" is to show the readers the recent achievements in this area. The f irst part
+of this exciting book will help you comprehend the frontiers in theoretical research of MPC, such as F ast MPC,
+Nonlinear MPC, Distributed MPC, Multi-Dimensional M PC and Fuzzy-Neural MPC. In the second part, severa l
+excellent applications of MPC in modern industry ar e proposed and efficient commercial software for MP C is
+introduced. Because of its special industrial origi n, we believe that MPC will remain energetic in the  future.
+How to reference
+In order to correctly reference this scholarly work , feel free to copy and paste the following:
+Danlei Chu, Michael Forbes, Johan Backstrom, Cristi an Gheorghe and Stephen Chu (2011). Model Predictiv e
+Control and Optimization for Papermaking Processes,  Advanced Model Predictive Control, Dr. Tao ZHENG
+(Ed.), ISBN: 978-953-307-298-2, InTech, Available f rom: http://www.intechopen.com/books/advanced-model -
+predictive-control/model-predictive-control-and-opt imization-for-papermaking-processes
+
+Page 36:
+© 2011 The Author(s). Licensee IntechOpen. This chapter is distributed
+under the terms of the 
+Creative Commons Attribution-NonCommercial-
+ShareAlike-3.0 License
+, which permits use, distribution and reproduction for
+non-commercial purposes, provided the original is properly cited and
+derivative works building on this content are distributed under the same
+license.
+
+==================================================

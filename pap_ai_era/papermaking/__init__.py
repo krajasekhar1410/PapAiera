@@ -7,3 +7,4 @@ from . import wet_end
 from . import press_vacuum
 from . import dryer_finishing
 from . import mass_balance
+from .variability_analysis import compute_vpa, VPAResult

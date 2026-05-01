@@ -157,3 +157,13 @@ This document serves as the comprehensive list of all equations, calculations, a
 * `basis_weight_mass_balance(thick_stock_flow, thick_stock_cons, slice_width, wire_speed, retention_ratio)`: Basis weight G based on volume balance.
 * `overall_retention_from_consistencies(headbox_cons, white_water_cons)`: Retention ratio (R).
 * `total_stock_volume(thick_stock_flow, thin_stock_flow, recirculation_constant)`: Volume balance of stock.
+
+## 4. Variability Analysis (`pap_ai_era.papermaking.variability_analysis`)
+
+### Variance Partition Analysis (VPA)
+* `compute_vpa(data, scan_col, box_col, value_col, process_average, goals, thresholds, sigma_convention)`: 
+  Decomposes total variability (2-sigma) into:
+  - **MDL**: Machine Direction Long-term (Scan Average trend)
+  - **CD**: Cross Direction (Average Profile)
+  - **MDS**: Machine Direction Short-term (Residual noise)
+  Returns a `VPAResult` with normalisation, threshold status, and root-cause inferences.
