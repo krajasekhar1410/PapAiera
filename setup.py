@@ -7,7 +7,7 @@ with open(os.path.join(os.path.dirname(__file__), 'README.md'), encoding='utf-8'
 
 setup(
     name="PapAiEra",
-    version="0.2.7",
+    version="0.2.8",
     description="A Python library for Pulp and Paper manufacturing processes, based on BREF (Best Available Techniques) standards.",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -16,7 +16,8 @@ setup(
     install_requires=[
         "numpy>=1.20.0",
         "pandas>=1.3.0",
-        "scipy>=1.7.0"
+        "scipy>=1.7.0",
+        "scikit-learn>=1.0.0"
     ],
     classifiers=[
         "Development Status :: 3 - Alpha",

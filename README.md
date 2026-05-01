@@ -30,6 +30,7 @@ The library covers a massive array of metrics across the entire pulp and paper p
 * **Non-Wood (`non_wood.py`)**: Depithing efficiency, silica load checks (crucial for bagasse).
 * **Bleaching Engine (`bleaching/`)**: Universal, input-driven bleaching sequence optimizer.
 * **Hood Optimizer (`papermaking/`)**: Dryer hood performance and energy optimizer.
+* **Bulk Prediction Model (`papermaking/`)**: ML-based multi-layer sheet bulk simulator.
 * **Boiler Optimizer (`energy/`)**: Physics-aware Digital Twin and efficiency optimizer.
 * **Recovery Cycle (`recovery_cycle.py`)**: Causticizing efficiency, evaporator steam economy, lime kiln energy.
 
@@ -102,6 +103,26 @@ vpa_report = compute_vpa(data, process_average=50.0)
 
 print(f"Total 2-Sigma Variability: {vpa_report.normalised['TOT']:.2f}%")
 print(f"Primary Problem Detected: {vpa_report.primary_problem}")
+```
+
+### 📚 ML Bulk Prediction Model
+A supervised learning framework to predict paper/board bulk ($cm^3/g$) based on layer-wise furnish, pulp properties (CSF, SW/HW ratio), and pressing conditions.
+
+**Key Features:**
+- **Layer-Wise Analysis**: Handles multi-layer structures (Top, Middle, Bottom) with independent pulp blends.
+- **Physics-Aware ML**: Combines Random Forest regression with industrial heuristics for robust predictions even with limited data.
+- **Process Sensitivity**: Tracks the impact of Nip Load, Number of Nips, and refining (CSF) on final sheet thickness.
+
+```python
+from pap_ai_era.papermaking import BulkModel
+
+# Define layers and process conditions
+layers = [{"gsm": 50, "sw_ratio": 0.9, "csf": 550}, {"gsm": 150, "sw_ratio": 0.1, "csf": 400}]
+process = {"nip_load": 60, "n_nips": 2}
+
+model = BulkModel(n_layers=2)
+# model.train(historical_data) # Train on mill data
+predicted_bulk = model.predict(layers, process)
 ```
 
 ### 💨 Paper Machine Hood Optimizer
