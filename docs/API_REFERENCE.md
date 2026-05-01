@@ -35,7 +35,16 @@ This document serves as the comprehensive list of all equations, calculations, a
 * `silica_load_black_liquor(silica_in_raw_material_kg, black_liquor_volume_m3)`: Calculates kg/m3 of SiO2 entering the evaporators to warn against scaling.
 * `non_wood_yield(dry_pulp_produced, bone_dry_depithed_bagasse)`: Yield calculations specifically modeled on depithed biomass.
 
-### Bleaching & Delignification (`bleaching.py`)
+### Bleaching Engine (`pap_ai_era.bleaching`)
+The new bleaching engine provides a universal optimization framework.
+* `Chemical(name, min_dosage, max_dosage, cost)`: Class representing a bleaching chemical.
+* `BleachingStage(name, chemicals, model)`: Class for a single stage in a sequence.
+* `BleachingSequence(stages, targets)`: Class for a full multi-stage sequence.
+* `BleachingOptimizer(sequence)`: Cost optimization engine using Differential Evolution.
+* `run_optimization_from_config(config, initial_state)`: High-level helper to run optimization from a JSON-like config.
+* `ask_user_config()`: Interactive CLI tool for building bleaching models.
+
+### Legacy Bleaching Utilities (`pap_ai_era.pulping.bleaching`)
 * `oxygen_delignification_efficiency(kappa_in, kappa_out)`: Pre-bleach kappa drop.
 * `theoretical_aox_generation(active_chlorine_multiple, kappa_to_bleach)`: Empirical determination of generated kg AOX based on ClO2 charge.
 * `wash_press_efficiency(dissolved_solids_in, dissolved_solids_out)`: Brown stock washer displacement ratio preventing COD carry-over.
