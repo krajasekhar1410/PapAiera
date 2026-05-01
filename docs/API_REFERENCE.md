@@ -71,6 +71,8 @@ The boiler optimizer provides a Digital Twin framework for efficiency control.
 * `overall_retention(white_water_consistency, headbox_consistency)`: Wire section first-pass retention rate.
 * `drying_efficiency(steam_used_in_dryers, water_evaporated)`: Validates specific evaporation steam economy against ~1.2 - 1.4 BAT averages.
 * `calculate_machine_fiber_balance(fiber_in_headbox_kg, wire_retention_pct, broke_generated_pct)`: Estimates net saleable paper by accounting for broke loops and effluent wire losses.
+* `run_hood_optimization(params)`: High-level entry for dryer hood energy optimization.
+* `HoodOptimizer`: Class managing evaporation load, fan power, and air recirculation tradeoffs.
 
 ### Wet End Chemistry (`wet_end_chemistry.py`)
 * `calculate_pump_flow_rate_lph(target_dose_kg_t, machine_production_t_h, concentration_gpl)`: Sets physical dosing pump targets from chemical concentration (GPL).

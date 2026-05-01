@@ -29,6 +29,7 @@ The library covers a massive array of metrics across the entire pulp and paper p
 * **Recycled Fibre (`recycled.py`)**: Deinking yield, fiber loss, rejects rates.
 * **Non-Wood (`non_wood.py`)**: Depithing efficiency, silica load checks (crucial for bagasse).
 * **Bleaching Engine (`bleaching/`)**: Universal, input-driven bleaching sequence optimizer.
+* **Hood Optimizer (`papermaking/`)**: Dryer hood performance and energy optimizer.
 * **Boiler Optimizer (`energy/`)**: Physics-aware Digital Twin and efficiency optimizer.
 * **Recovery Cycle (`recovery_cycle.py`)**: Causticizing efficiency, evaporator steam economy, lime kiln energy.
 
@@ -101,6 +102,25 @@ vpa_report = compute_vpa(data, process_average=50.0)
 
 print(f"Total 2-Sigma Variability: {vpa_report.normalised['TOT']:.2f}%")
 print(f"Primary Problem Detected: {vpa_report.primary_problem}")
+```
+
+### 💨 Paper Machine Hood Optimizer
+Optimizes the dryer section hood by balancing evaporation load against airflow and recirculation.
+
+**Key Features:**
+- **Drying Load Calculation**: Uses production rate, speed, and moisture removal (Inlet/Outlet) to determine the exact evaporation demand.
+- **Energy Minimization**: Optimizes Fan RPM and Recirculation to save steam and electrical energy.
+- **Operational Safety**: Ensures the sheet reaches target dryness while minimizing heat loss to the atmosphere.
+
+```python
+from pap_ai_era.papermaking import run_hood_optimization
+
+params = {
+    "machine_speed": 1200, "gsm": 80, "width": 6.5,
+    "inlet_moisture": 42.0, "target_moisture": 5.0,
+    "return_temp": 85.0, "outside_temp": 30.0, "humidity": 0.15
+}
+best = run_hood_optimization(params)
 ```
 
 ### 🔥 Universal Boiler Optimizer
