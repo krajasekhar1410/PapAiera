@@ -219,13 +219,16 @@ if result["success"]:
     print(f"Optimal Effective Alkali: {result['optimal_EA']:.2f}%")
 
 ### 7. Variance Partition Analysis (VPA - ABB 2-Sigma)
-Decomposes reel variability into Machine Direction (MDL), Cross Direction (CD), and Residual (MDS) components with automated root-cause inference.
+Decomposes reel variability into Machine Direction (MDL), Cross Direction (CD), and Residual (MDS) components with automated root-cause inference. **Works with any machine dimensions (e.g., 100, 600, or 1000+ data boxes).**
 ```python
 import numpy as np
 from pap_ai_era.papermaking.variability_analysis import compute_vpa
 
-# Simulated 2D scanner data: 20 scans x 100 data boxes
-data = np.random.normal(loc=50, scale=1.5, size=(20, 100))
+# Data dimensions adapt to any machine design (scans x data_boxes)
+# Example: 50 scans and 600 data boxes (based on machine width)
+scans = 50 
+data_boxes = 600 
+data = np.random.normal(loc=50, scale=1.5, size=(scans, data_boxes))
 
 vpa_report = compute_vpa(data, process_average=50.0)
 
@@ -235,6 +238,7 @@ print(f"Primary Problem Detected: {vpa_report.primary_problem}")
 if vpa_report.inference:
     print(f"Root Cause Diagnosis: {vpa_report.inference[0]['cause_area']}")
     print(f"Recommended Action: {vpa_report.inference[0]['recommended_action']}")
+```
 ```
 
 ### 8. Stock Preparation & Refining
