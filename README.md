@@ -226,6 +226,7 @@ from pap_ai_era.papermaking.variability_analysis import compute_vpa
 
 # Data dimensions adapt to any machine design (scans x data_boxes)
 # Example: 50 scans and 600 data boxes (based on machine width)
+# Note: 'loc' represents the target gsm/value; change this to match your specific grade target.
 scans = 50 
 data_boxes = 600 
 data = np.random.normal(loc=50, scale=1.5, size=(scans, data_boxes))

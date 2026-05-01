@@ -40,7 +40,9 @@ def compute_vpa(
         scan_col: Column name for scan index if data is a DataFrame.
         box_col: Column name for data box index if data is a DataFrame.
         value_col: Measurement column if data is a DataFrame.
-        process_average: Baseline process average. If None, it is computed from the data grand mean.
+        process_average: Baseline process average (e.g., target gsm or moisture %). 
+                        If None, it is computed from the data grand mean. This value is used 
+                        to calculate the Normalized % of Process variability.
         goals: Target distribution of variability percentages. Default: {'MDS': 70, 'CD': 20, 'MDL': 10}.
         thresholds: Alert thresholds for variability percentages. Default: {'MDS': 75, 'CD': 25, 'MDL': 15}.
         sigma_convention: Multiplier for reporting (default 2 for 2-sigma).
