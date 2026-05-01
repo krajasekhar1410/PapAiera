@@ -217,6 +217,66 @@ result = optimize_continuous_kamyr_digester(target_kappa=16.0, liquor_to_wood_ra
 
 if result["success"]:
     print(f"Optimal Effective Alkali: {result['optimal_EA']:.2f}%")
+
+### 7. Variance Partition Analysis (VPA - ABB 2-Sigma)
+Decomposes reel variability into Machine Direction (MDL), Cross Direction (CD), and Residual (MDS) components with automated root-cause inference.
+```python
+import numpy as np
+from pap_ai_era.papermaking.variability_analysis import compute_vpa
+
+# Simulated 2D scanner data: 20 scans x 100 data boxes
+data = np.random.normal(loc=50, scale=1.5, size=(20, 100))
+
+vpa_report = compute_vpa(data, process_average=50.0)
+
+print(f"Total 2-Sigma Variability: {vpa_report.normalised['TOT']:.2f}%")
+print(f"Variability Distribution: {vpa_report.pct_distribution}")
+print(f"Primary Problem Detected: {vpa_report.primary_problem}")
+if vpa_report.inference:
+    print(f"Root Cause Diagnosis: {vpa_report.inference[0]['cause_area']}")
+    print(f"Recommended Action: {vpa_report.inference[0]['recommended_action']}")
+```
+
+### 8. Stock Preparation & Refining
+Calculates Net Specific Energy (NSE) for refiners to track fiber development and energy efficiency.
+```python
+from pap_ai_era.papermaking.stock_preparation import refining_net_specific_energy
+
+nse = refining_net_specific_energy(
+    power_kw=1200, 
+    no_load_power_kw=400, 
+    flow_lpm=3000, 
+    consistency_pct=4.5
+)
+print(f"Refining Net Specific Energy: {nse:.2f} kWh/t")
+```
+
+### 9. Wet End Hydraulics (Jet-to-Wire)
+Calculates the Jet-to-Wire ratio to optimize formation and sheet orientation.
+```python
+from pap_ai_era.papermaking.wet_end import jet_to_wire_ratio
+
+ratio = jet_to_wire_ratio(
+    headbox_pressure_kpa=120.0, 
+    wire_speed_mpm=1000.0, 
+    discharge_coefficient=0.98
+)
+print(f"Jet-to-Wire Ratio: {ratio:.3f}")
+```
+
+### 10. Press Section Physics
+Calculates the average nip pressure for a roll press.
+```python
+from pap_ai_era.papermaking.press_vacuum import average_nip_pressure
+
+pressure = average_nip_pressure(
+    line_load_kn_m=80.0, 
+    nip_width_mm=25.0
+)
+print(f"Average Nip Pressure: {pressure:.2f} MPa")
+```
+
+---
 ```
 
 ---
