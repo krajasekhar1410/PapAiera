@@ -89,6 +89,19 @@ config = {
     "targets": {"brightness": 90.0, "kappa": 2.0, "viscosity_min": 800}
 }
 result = run_optimization_from_config(config)
+
+# Full Multi-Stage Optimization (D0-EOP-D1-D2)
+config_full = {
+    "stages": [
+        {"name": "D0", "chemicals": [{"name": "ClO2", "min_dosage": 5, "max_dosage": 25, "cost": 0.8}]},
+        {"name": "EOP", "chemicals": [{"name": "NaOH", "min_dosage": 5, "max_dosage": 20, "cost": 0.4}, {"name": "H2O2", "min_dosage": 2, "max_dosage": 10, "cost": 0.6}]},
+        {"name": "D1", "chemicals": [{"name": "ClO2", "min_dosage": 2, "max_dosage": 15, "cost": 0.8}]},
+        {"name": "D2", "chemicals": [{"name": "ClO2", "min_dosage": 1, "max_dosage": 10, "cost": 0.8}]}
+    ],
+    "targets": {"brightness": 88.5, "kappa": 1.5}
+}
+res_full = run_optimization_from_config(config_full)
+print(f"Optimal Chemical Cost: ${res_full['best_cost']:.2f}")
 ```
 
 ### 📊 Variance Partition Analysis (VPA - ABB 2-Sigma)
