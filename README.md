@@ -40,6 +40,7 @@ The library covers a massive array of metrics across the entire pulp and paper p
 * **Machine Operations (`machine.py`)**: Paper machine fiber mass balance, OEE, broke tracking, wire retention, dryer section economy.
 * **Wet End Chemistry (`wet_end_chemistry.py`)**: Furnish-based dosing heuristics, physical GPL to LPH pump conversion algorithms, ash retention.
 * **Coating/Finishing (`coating.py`)**: Colour recovery, ultrafiltration efficiency, specific water usage.
+* **WetEndChemix (`papermaking/wet_end_chemix`)**: Wet-end chemistry, Zeta potential, and fiber bonding simulator.
 * **Variability Analysis (`variability_analysis.py`)**: ABB-compliant VPA engine for MDL, CD, and MDS decomposition.
 
 ### 3. Sustainability (`pap_ai_era.sustainability`)
@@ -243,6 +244,29 @@ dosing = d_eng.calculate_optimal_dosing(furnish, kappa_target=16.0, moisture_pct
 # Calculate Effective H-Factor from profile
 profile = [(0, 80), (60, 160), (120, 160)]
 h_eff = h_eng.get_effective_h(h_eng.calculate_raw_h(profile), furnish)
+```
+
+### ⚗️ WetEndChemix - Chemistry & Bonding
+A specialized simulator to "see the invisible" wet-end chemistry. It predicts charge balance, Zeta potential, and the resulting Fiber Bonding Index (FBI) to minimize paper break risks.
+
+**Key Features:**
+- **ZetaPredictor**: Hybrid Stern-Debye model for colloidal charge stability.
+- **BondStrengthModel**: Predicts break probability based on chemistry, refining, and starch dosing.
+- **Shop-Floor Visualizer**: Optional PyQt6-based dashboard for real-time monitoring.
+
+```python
+from pap_ai_era.papermaking.wet_end_chemix import WetEndSimulator, ChemicalDatabase
+
+db = ChemicalDatabase()
+sim = WetEndSimulator(db)
+
+# Simulate current mill state
+results = sim.run_simulation(
+    dosages={"CPAM": 0.25, "STARCH": 12.0},
+    ph=6.8, temp_C=48.0, 
+    refining_energy=80.0, gsm=70.0
+)
+print(f"Break Risk: {results['break_risk_pct']:.1f}%")
 ```
 
 ---

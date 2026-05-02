@@ -90,7 +90,15 @@ The boiler optimizer provides a Digital Twin framework for efficiency control.
 ### Wet End Chemistry (`wet_end_chemistry.py`)
 * `calculate_pump_flow_rate_lph(target_dose_kg_t, machine_production_t_h, concentration_gpl)`: Sets physical dosing pump targets from chemical concentration (GPL).
 * `ash_retention_efficiency(headbox_ash_consistency, white_water_ash_consistency)`: Dedicated filler accounting.
-* `suggest_furnish_dosing(hardwood_pct, softwood_pct, broke_pct, target_akd_sizing)`: Heuristic dosing ratios dynamically balancing Hardwood surface fines and Broke anionic trash.
+* `suggest_furnish_dosing(hardwood_pct, softwood_pct, broke_pct, target_akd_sizing)`: Heuristic dosing ratios.
+
+### Wet-End Chemistry & Bonding (`pap_ai_era.papermaking.wet_end_chemix`)
+* `ChemicalDatabase()`: Repository of common paper chemicals and their charge properties.
+* `ZetaPredictor()`: Models charge density and Zeta potential (mV) based on dosing and ionic strength.
+* `BondStrengthModel()`: Calculates Fiber Bonding Index (FBI) and break risk probability.
+* `WetEndSimulator()`: Orchestrates the full dosing chain and steady-state chemical balance.
+* `LayeredSimulator()`: Extends chemical modeling to multi-layer board machines.
+* `launch_dashboard()`: Launches the optional PyQt6 shop-floor visualization tool.
 
 ### Moisture Prediction Models (`moisture_prediction.py`)
 * `predict_wire_drainage_and_couch_moisture(target_gsm, machine_speed_mpm, wire_width_m, layer_data, vacuum_boxes)`: Empirically predicts drainage capabilities based on linear vacuum strengths.
