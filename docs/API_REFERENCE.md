@@ -6,6 +6,16 @@ This document serves as the comprehensive list of all equations, calculations, a
 
 ## 1. Pulping Modules (`pap_ai_era.pulping`)
 
+### SYLVACORE - Digester Intelligence (`pap_ai_era.pulping.sylvacore`)
+Advanced process intelligence framework for chemical pulping operations.
+* `FurnishLib()`: Master database for species characterization (density, lignin, Rf).
+* `HFactorEngine()`: Calculates furnish-corrected effective H-factor ($H_{eff} = H \times R_f$).
+* `KappaModel()`: Predicts delignification progress through cooking stages.
+* `ChemDosing()`: Optimizes EA, Sulfidity, and L/W based on furnish targets and moisture.
+* `PreTreatment()`: Monitors pre-heating and computes Impregnation Quality Index (IQI).
+* `DigesterManager()`: Manages Batch Digester Identity (BDI) and Continuous Digester zone states.
+* `AdvisorEngine()`: Generates actionable recommendations (ADV codes) for process corrections.
+
 ### Kraft Pulping (`kraft.py`)
 * `kappa_number(k_permanganate_consumed)`: Estimates Kappa Number (residual lignin).
 * `chemical_recovery_efficiency(chemicals_recovered, chemicals_charged)`: Calculates chemical recovery loop efficiency (Target > 95%).

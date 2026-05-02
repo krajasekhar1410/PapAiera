@@ -33,6 +33,7 @@ The library covers a massive array of metrics across the entire pulp and paper p
 * **Hood Optimizer (`papermaking/`)**: Dryer hood performance and energy optimizer.
 * **Bulk Prediction Model (`papermaking/`)**: ML-based multi-layer sheet bulk simulator.
 * **Boiler Optimizer (`energy/`)**: Physics-aware Digital Twin and efficiency optimizer.
+* **SYLVACORE (`pulping/sylvacore`)**: Advanced Kraft digestion intelligence (H-factor, Kappa, FurnishLib).
 * **Recovery Cycle (`recovery_cycle.py`)**: Causticizing efficiency, evaporator steam economy, lime kiln energy.
 
 ### 2. Papermaking Modules (`pap_ai_era.papermaking`)
@@ -217,6 +218,31 @@ couch = predict_wire_drainage_and_couch_moisture(
     vacuum_boxes=[{'vacuum_kpa': 15}, {'vacuum_kpa': 35}, {'vacuum_kpa': 60}]
 )
 print(f"Moisture exiting Couch Roll: {couch['moisture_after_couch_pct']:.2f}%")
+```
+
+### 🌲 SYLVACORE - Digester Process Intelligence
+A systematic framework for Kraft pulping that models furnish reactivity, dynamic H-factors, and stage-wise delignification.
+
+**Key Features:**
+- **FurnishLib**: Comprehensive reference for Softwood, Hardwood, and Non-wood species.
+- **Dynamic H-Factor**: Furnish-corrected H-factor calculations ($H_{eff} = H \times R_f$).
+- **Impregnation Quality (IQI)**: Real-time tracking of liquor penetration effectiveness.
+- **Batch Digester Identity (BDI)**: Lifecycle tracking and vessel-specific bias correction.
+
+```python
+from pap_ai_era.pulping.sylvacore import FurnishLib, HFactorEngine, ChemDosing
+
+flib = FurnishLib()
+h_eng = HFactorEngine()
+d_eng = ChemDosing()
+
+# Optimize dosing for Eucalyptus
+furnish = flib.get_furnish("HW_EUC_GLOB")
+dosing = d_eng.calculate_optimal_dosing(furnish, kappa_target=16.0, moisture_pct=50.0)
+
+# Calculate Effective H-Factor from profile
+profile = [(0, 80), (60, 160), (120, 160)]
+h_eff = h_eng.get_effective_h(h_eng.calculate_raw_h(profile), furnish)
 ```
 
 ---
