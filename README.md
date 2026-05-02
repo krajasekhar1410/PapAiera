@@ -29,6 +29,7 @@ The library covers a massive array of metrics across the entire pulp and paper p
 * **Recycled Fibre (`recycled.py`)**: Deinking yield, fiber loss, rejects rates.
 * **Non-Wood (`non_wood.py`)**: Depithing efficiency, silica load checks (crucial for bagasse).
 * **Bleaching Engine (`bleaching/`)**: Universal, input-driven bleaching sequence optimizer.
+* **Adaptive Residual Optimizer**: Kappa-less bleaching control using Brightness/Residual signals.
 * **Hood Optimizer (`papermaking/`)**: Dryer hood performance and energy optimizer.
 * **Bulk Prediction Model (`papermaking/`)**: ML-based multi-layer sheet bulk simulator.
 * **Boiler Optimizer (`energy/`)**: Physics-aware Digital Twin and efficiency optimizer.
@@ -103,6 +104,25 @@ vpa_report = compute_vpa(data, process_average=50.0)
 
 print(f"Total 2-Sigma Variability: {vpa_report.normalised['TOT']:.2f}%")
 print(f"Primary Problem Detected: {vpa_report.primary_problem}")
+```
+
+### 🧪 Adaptive Residual Bleaching Optimizer (ARO)
+A specialized bleaching controller that eliminates the need for expensive Kappa analyzers. It uses the **Optimum Line** concept to balance Brightness and Chemical Residual.
+
+**Key Features:**
+- **Kappa-Less Control**: Operates entirely on final-stage brightness and residual measurements.
+- **Golden Section Search**: High-speed mathematical optimization to find the ideal dosage $Q$.
+- **Industrial Logic**: Built-in deadband ($\epsilon$), rate-of-change limits, and safety overrides.
+
+```python
+from pap_ai_era.bleaching import AdaptiveResidualOptimizer
+
+# Setup with target brightness and residual
+opt = AdaptiveResidualOptimizer(target_brightness=80.0, target_residual=5.0)
+
+# Detect state and optimize (with rate limiting)
+result = opt.optimize(current_b=55.2, current_r=22.5, 
+                      simulate_fn=my_sim_fn, current_q=15.0, max_delta=2.0)
 ```
 
 ### 📚 ML Bulk Prediction Model

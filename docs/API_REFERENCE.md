@@ -43,6 +43,8 @@ The new bleaching engine provides a universal optimization framework.
 * `BleachingOptimizer(sequence)`: Cost optimization engine using Differential Evolution.
 * `run_optimization_from_config(config, initial_state)`: High-level helper to run optimization from a JSON-like config.
 * `ask_user_config()`: Interactive CLI tool for building bleaching models.
+* `AdaptiveResidualOptimizer`: Kappa-less optimizer based on the Optimum Line f(b,r)=0.
+* `BleachingSimulator`: Simulation engine for Brightness/Residual response.
 
 ### Legacy Bleaching Utilities (`pap_ai_era.pulping.bleaching`)
 * `oxygen_delignification_efficiency(kappa_in, kappa_out)`: Pre-bleach kappa drop.
