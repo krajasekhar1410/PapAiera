@@ -42,6 +42,8 @@ The library covers a massive array of metrics across the entire pulp and paper p
 * **Coating/Finishing (`coating.py`)**: Colour recovery, ultrafiltration efficiency, specific water usage.
 * **WetEndChemix (`papermaking/wet_end_chemix`)**: Wet-end chemistry, Zeta potential, and fiber bonding simulator.
 * **Variability Analysis (`variability_analysis.py`)**: ABB-compliant VPA engine for MDL, CD, and MDS decomposition.
+* **DTW Lag Detection (`dtw_lag.py`)**: Universal Dynamic Time Warping lag calculator — finds the time delay between ANY input and output process variable.
+* **Mill Lag Profiles (`mill_lag_profiles.py`)**: Pre-built lag analysis scenarios for bleach brightness, tower pH, and viscosity-strength tracking.
 
 ### 3. Sustainability (`pap_ai_era.sustainability`)
 * **Emissions (`emissions.py`, `air_emissions.py`)**: BOD/COD/TSS load to water. TRS, SO2, NOx, Dust to air.
@@ -267,6 +269,152 @@ results = sim.run_simulation(
     refining_energy=80.0, gsm=70.0
 )
 print(f"Break Risk: {results['break_risk_pct']:.1f}%")
+```
+
+### ⏱️ DTW Lag Detection — Universal Time Delay Finder
+Finds the **time lag** between ANY input parameter and ANY output parameter using Dynamic Time Warping. Works for pulp mills, chemical plants, power plants — any process where a cause variable affects an effect variable with a delay.
+
+**Key Features:**
+- **Universal**: Works with any two time-series signals — no domain configuration needed.
+- **Dynamic Time Warping**: Superior to simple cross-correlation for noisy, non-stationary signals.
+- **Handles Inverse Relationships**: Detects lag even when cause and effect are inversely correlated (e.g., temperature ↑ → kappa ↓).
+- **Multi-Variable Audit**: Test all input-output combinations in one call.
+- **Pre-Built Mill Scenarios**: Ready-to-use configurations for common pulp & paper lag analysis.
+- **Confidence Scoring**: Rates each result as HIGH, MEDIUM, or LOW confidence.
+
+#### Use Case 1: Simple — Find lag between any two signals
+```python
+from pap_ai_era.papermaking import find_lag
+
+# Any input array and output array — that's all you need
+result = find_lag(
+    input_signal=temperature_data,
+    output_signal=viscosity_data,
+    time_interval=1.0,       # 1 sample per minute
+    time_unit='minutes'
+)
+
+print(f"Lag: {result['lag_time']} {result['lag_unit']}")
+print(f"Confidence: {result['confidence']}")
+```
+
+#### Use Case 2: Digester cook temperature → Kappa number
+```python
+from pap_ai_era.papermaking import find_lag
+
+# Real DCS historian data (1-minute intervals)
+result = find_lag(
+    input_signal=cook_temperature,
+    output_signal=kappa_number,
+    time_interval=1.0,
+    time_unit='minutes',
+    max_lag=80,
+    input_name='Cook Temperature',
+    output_name='Kappa Number'
+)
+print(f"Cook-to-Kappa delay: {result['lag_time']:.1f} minutes")
+# Use this lag for feedforward dead-time compensation in DCS
+```
+
+#### Use Case 3: Multi-variable process audit from a DataFrame
+```python
+import pandas as pd
+from pap_ai_era.papermaking import find_multi_lag
+
+# Load your process historian data
+df = pd.read_csv('process_data.csv')
+
+# Test ALL input-output combinations at once
+results = find_multi_lag(
+    data=df,
+    input_columns=['consistency', 'headbox_pressure', 'steam_flow', 'refiner_energy'],
+    output_columns=['basis_weight', 'moisture', 'caliper', 'tensile_strength'],
+    time_interval=1.0,
+    time_unit='minutes'
+)
+print(results)
+#          Input         Output  Lag (minutes)  Confidence  Correlation
+#    consistency   basis_weight           45.0        HIGH       0.9310
+#     steam_flow       moisture           83.0        HIGH       0.4158
+# refiner_energy        caliper           12.0      MEDIUM       0.8500
+```
+
+#### Use Case 4: Pre-built mill scenario — Bleach tower brightness to board brightness
+```python
+from pap_ai_era.papermaking import MillScenario, run_mill_scenario
+
+result = run_mill_scenario(
+    MillScenario.BLEACH_BRIGHTNESS,
+    cause=bleach_tower_inlet_brightness,
+    effect=board_brightness_qcs
+)
+print(result.summary())
+# === Bleach Tower Inlet Brightness to Board Brightness ===
+# DTW Optimal Lag:    122.0 min
+# Confidence:         HIGH
+# Status: NORMAL
+# Interpretation:
+#   - Lag of 122.0 min is within expected range (60-240 min)
+#   - Use this lag for feedforward dead-time compensation in DCS
+```
+
+#### Use Case 5: Tower pH → Wet-end pH
+```python
+from pap_ai_era.papermaking import MillScenario, run_mill_scenario
+
+result = run_mill_scenario(
+    MillScenario.TOWER_PH_WETEND,
+    cause=bleach_tower_exit_ph,
+    effect=wet_end_ph
+)
+print(f"pH propagation delay: {result.dtw_result.optimal_lag_seconds / 60:.0f} minutes")
+```
+
+#### Use Case 6: Stage-wise viscosity → Strength properties (tensile, burst, tear)
+```python
+from pap_ai_era.papermaking import run_viscosity_strength_audit
+
+report = run_viscosity_strength_audit(
+    viscosity_signals={
+        'D0_viscosity': d0_visc_data,
+        'EOP_viscosity': eop_visc_data,
+        'D1_viscosity': d1_visc_data,
+    },
+    strength_signals={
+        'tensile_index': tensile_data,
+        'burst_index': burst_data,
+        'tear_index': tear_data,
+    }
+)
+print(report.summary_table)
+# Shows which bleach stage most impacts which strength property
+```
+
+#### Use Case 7: Non-pulp example — Any chemical/industrial process
+```python
+from pap_ai_era.papermaking import find_lag
+
+# Reactor feed rate → product concentration
+result = find_lag(feed_rate, product_concentration,
+                  time_interval=5.0, time_unit='seconds')
+
+# Boiler fuel flow → steam header pressure
+result = find_lag(fuel_flow, steam_pressure,
+                  time_interval=1.0, time_unit='seconds')
+
+# Cooling water temperature → heat exchanger outlet
+result = find_lag(cw_inlet_temp, hx_outlet_temp,
+                  time_interval=10.0, time_unit='seconds')
+```
+
+#### Use Case 8: List all available mill scenarios
+```python
+from pap_ai_era.papermaking import list_scenarios
+print(list_scenarios())
+#                              Scenario  Expected Lag       Process Area
+#   bleach_tower_inlet_brightness_to_...   60-240 min  Bleach Plant to PM
+#   bleach_tower_ph_to_wetend_ph          30-180 min   Washers to Wet-End
+#   stagewise_viscosity_to_strength_...  120-480 min   Bleach to QC Lab
 ```
 
 ---
