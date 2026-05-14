@@ -1,0 +1,154 @@
+{
+  "grades": {
+    "kraft_liner": {
+      "name": "Kraft Liner",
+      "category": "board",
+      "basis_weight_range": [100, 440],
+      "typical_gsm": 175,
+      "fiber_mix": {"virgin_softwood_kraft": 0.7, "virgin_hardwood_kraft": 0.3},
+      "steam_intensity_gj_per_ton": 8.5,
+      "electricity_intensity_kwh_per_ton": 550,
+      "water_intensity_m3_per_ton": 12.0,
+      "typical_co2_per_ton": 650
+    },
+    "testliner": {
+      "name": "Testliner",
+      "category": "board",
+      "basis_weight_range": [100, 300],
+      "typical_gsm": 150,
+      "fiber_mix": {"recycled_occ": 0.85, "virgin_softwood_kraft": 0.15},
+      "steam_intensity_gj_per_ton": 6.0,
+      "electricity_intensity_kwh_per_ton": 450,
+      "water_intensity_m3_per_ton": 10.0,
+      "typical_co2_per_ton": 480
+    },
+    "fluting_medium": {
+      "name": "Fluting / Corrugating Medium",
+      "category": "board",
+      "basis_weight_range": [80, 200],
+      "typical_gsm": 112,
+      "fiber_mix": {"recycled_occ": 0.90, "recycled_mixed_waste": 0.10},
+      "steam_intensity_gj_per_ton": 5.5,
+      "electricity_intensity_kwh_per_ton": 400,
+      "water_intensity_m3_per_ton": 8.0,
+      "typical_co2_per_ton": 420
+    },
+    "writing_printing_woodfree": {
+      "name": "Writing & Printing (Woodfree)",
+      "category": "paper",
+      "basis_weight_range": [50, 120],
+      "typical_gsm": 80,
+      "fiber_mix": {"virgin_hardwood_kraft": 0.7, "virgin_softwood_kraft": 0.3},
+      "steam_intensity_gj_per_ton": 9.0,
+      "electricity_intensity_kwh_per_ton": 650,
+      "water_intensity_m3_per_ton": 15.0,
+      "typical_co2_per_ton": 750
+    },
+    "writing_printing_woodcontaining": {
+      "name": "Writing & Printing (Wood-Containing)",
+      "category": "paper",
+      "basis_weight_range": [40, 90],
+      "typical_gsm": 60,
+      "fiber_mix": {"virgin_mechanical_tmp": 0.5, "virgin_softwood_kraft": 0.3, "virgin_hardwood_kraft": 0.2},
+      "steam_intensity_gj_per_ton": 7.0,
+      "electricity_intensity_kwh_per_ton": 1200,
+      "water_intensity_m3_per_ton": 14.0,
+      "typical_co2_per_ton": 820
+    },
+    "newsprint": {
+      "name": "Newsprint",
+      "category": "paper",
+      "basis_weight_range": [40, 52],
+      "typical_gsm": 45,
+      "fiber_mix": {"recycled_onp": 0.6, "virgin_mechanical_tmp": 0.4},
+      "steam_intensity_gj_per_ton": 5.0,
+      "electricity_intensity_kwh_per_ton": 1100,
+      "water_intensity_m3_per_ton": 12.0,
+      "typical_co2_per_ton": 600
+    },
+    "coated_board_fbb": {
+      "name": "Folding Boxboard (FBB)",
+      "category": "board",
+      "basis_weight_range": [200, 450],
+      "typical_gsm": 300,
+      "fiber_mix": {"virgin_hardwood_kraft": 0.4, "virgin_mechanical_gw": 0.4, "virgin_softwood_kraft": 0.2},
+      "steam_intensity_gj_per_ton": 10.0,
+      "electricity_intensity_kwh_per_ton": 900,
+      "water_intensity_m3_per_ton": 18.0,
+      "typical_co2_per_ton": 850
+    },
+    "tissue_bath": {
+      "name": "Bath Tissue",
+      "category": "tissue",
+      "basis_weight_range": [14, 25],
+      "typical_gsm": 18,
+      "fiber_mix": {"virgin_hardwood_kraft": 0.6, "virgin_softwood_kraft": 0.4},
+      "steam_intensity_gj_per_ton": 12.0,
+      "electricity_intensity_kwh_per_ton": 800,
+      "water_intensity_m3_per_ton": 20.0,
+      "typical_co2_per_ton": 1100
+    },
+    "tissue_facial": {
+      "name": "Facial Tissue",
+      "category": "tissue",
+      "basis_weight_range": [12, 20],
+      "typical_gsm": 15,
+      "fiber_mix": {"virgin_hardwood_kraft": 0.7, "virgin_softwood_kraft": 0.3},
+      "steam_intensity_gj_per_ton": 13.0,
+      "electricity_intensity_kwh_per_ton": 850,
+      "water_intensity_m3_per_ton": 22.0,
+      "typical_co2_per_ton": 1200
+    },
+    "tissue_towel": {
+      "name": "Kitchen Towel",
+      "category": "tissue",
+      "basis_weight_range": [20, 40],
+      "typical_gsm": 28,
+      "fiber_mix": {"recycled_deinked": 0.5, "virgin_softwood_kraft": 0.3, "virgin_hardwood_kraft": 0.2},
+      "steam_intensity_gj_per_ton": 10.0,
+      "electricity_intensity_kwh_per_ton": 700,
+      "water_intensity_m3_per_ton": 18.0,
+      "typical_co2_per_ton": 900
+    },
+    "sack_kraft": {
+      "name": "Sack Kraft Paper",
+      "category": "packaging",
+      "basis_weight_range": [60, 100],
+      "typical_gsm": 80,
+      "fiber_mix": {"virgin_softwood_kraft": 0.9, "virgin_hardwood_kraft": 0.1},
+      "steam_intensity_gj_per_ton": 8.0,
+      "electricity_intensity_kwh_per_ton": 580,
+      "water_intensity_m3_per_ton": 13.0,
+      "typical_co2_per_ton": 700
+    },
+    "duplex_board": {
+      "name": "Duplex Board (Coated/Uncoated)",
+      "category": "board",
+      "basis_weight_range": [200, 500],
+      "typical_gsm": 300,
+      "fiber_mix": {"recycled_mixed_waste": 0.7, "recycled_occ": 0.2, "virgin_softwood_kraft": 0.1},
+      "steam_intensity_gj_per_ton": 7.0,
+      "electricity_intensity_kwh_per_ton": 500,
+      "water_intensity_m3_per_ton": 12.0,
+      "typical_co2_per_ton": 520
+    },
+    "specialty_decor": {
+      "name": "Decor Paper (Melamine Base)",
+      "category": "specialty",
+      "basis_weight_range": [60, 120],
+      "typical_gsm": 80,
+      "fiber_mix": {"virgin_hardwood_kraft": 0.8, "virgin_softwood_kraft": 0.2},
+      "steam_intensity_gj_per_ton": 11.0,
+      "electricity_intensity_kwh_per_ton": 700,
+      "water_intensity_m3_per_ton": 16.0,
+      "typical_co2_per_ton": 880
+    }
+  },
+  "categories": ["paper", "board", "tissue", "packaging", "specialty"],
+  "metadata": {
+    "version": "1.0.0",
+    "grades_count": 13,
+    "source": "CEPI, BREF 2015, Industry benchmarks",
+    "editable": true
+  }
+}

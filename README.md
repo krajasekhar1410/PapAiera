@@ -45,11 +45,12 @@ The library covers a massive array of metrics across the entire pulp and paper p
 * **DTW Lag Detection (`dtw_lag.py`)**: Universal Dynamic Time Warping lag calculator — finds the time delay between ANY input and output process variable.
 * **Mill Lag Profiles (`mill_lag_profiles.py`)**: Pre-built lag analysis scenarios for bleach brightness, tower pH, and viscosity-strength tracking.
 
-### 3. Sustainability (`pap_ai_era.sustainability`)
+### 3. Sustainability & Carbon (CCTS) (`pap_ai_era.sustainability`, `pap_ai_era.ccts`)
 * **Emissions (`emissions.py`, `air_emissions.py`)**: BOD/COD/TSS load to water. TRS, SO2, NOx, Dust to air.
 * **Wastewater & Water (`wastewater.py`, `water_energy.py`)**: Loop closure, explicit cooling-water vs contaminated-water accounting.
 * **Management (EMS)**: ISO 14001 grading, solid waste footprint (Ash + Sludge + Rejects).
 * **Power Plant & Cogen (`power_plant.py`)**: Boiler thermal efficiency and TG steam tracking.
+* **CCTS Platform (`ccts/`)**: Full No-Code Carbon Credit & Trading System module with Scope 1, 2, 3 carbon calculation, credit estimation, dynamic formulas, and built-in UI.
 
 ### 4. Mathematical AI Solvers (`pap_ai_era.optimization_models`)
 Allows for non-linear optimization using SciPy constraints to determine optimal dosing/setpoints.
@@ -416,6 +417,48 @@ print(list_scenarios())
 #   bleach_tower_ph_to_wetend_ph          30-180 min   Washers to Wet-End
 #   stagewise_viscosity_to_strength_...  120-480 min   Bleach to QC Lab
 ```
+
+### 🌍 Carbon Credit & Trading System (CCTS)
+A complete module for No-Code Carbon Calculation, Carbon Credit Estimation, and ESG reporting for Pulp, Paper, Board & Packaging mills. Features editable emission factors (IPCC/IEA/CEA), product grade baseline comparison, and a built-in Streamlit UI.
+
+**Key Features:**
+- **Full Scope Calculation**: Tracks Scope 1 (Direct), Scope 2 (Energy), and Scope 3 (Value Chain) emissions.
+- **Credit Estimator**: Estimate carbon credits from fuel switching or efficiency improvements.
+- **Editable Factors**: Easily update Fuel, Grid Electricity, Steam, Process, and Fiber emission factors via Python or Excel.
+- **No-Code Dashboard**: Launch the built-in UI for drag-and-drop analytics.
+
+#### Use Case 1: Carbon Calculator (Code)
+```python
+from pap_ai_era.ccts import CarbonCalculator
+calc = CarbonCalculator()
+result = calc.calculate(
+    product='kraft_liner',
+    production_tons=1000,
+    fuel={'coal_bituminous': 5000, 'natural_gas': 2000},
+    electricity_mwh=550,
+    electricity_region='india_national'
+)
+print(result.summary())
+```
+
+#### Use Case 2: Carbon Credit Estimation
+```python
+from pap_ai_era.ccts import CreditEstimator
+ce = CreditEstimator(price_per_ton=25.0)
+result = ce.from_fuel_switch(
+    project_name="Coal to Biomass Conversion",
+    production_tons=50000,
+    baseline_fuel={'coal_bituminous': 200000},
+    proposed_fuel={'biomass_wood': 180000, 'natural_gas': 30000}
+)
+print(result.summary())
+```
+
+#### Use Case 3: Launching the No-Code UI
+```bash
+python -m pap_ai_era.ccts.ui.app
+```
+*This opens a browser-based Streamlit dashboard where users can upload Excel data, edit emission factors, and build custom ESG KPI dashboards without writing any code.*
 
 ---
 
