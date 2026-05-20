@@ -462,6 +462,53 @@ python -m pap_ai_era.ccts.ui.app
 
 ---
 
+### 🤖 CopilotPapaiera (AI Expert System)
+PapAiEra now includes a fully integrated, offline **AI Expert System** containing the complete knowledge of the "Handbook of Pulping and Papermaking".
+
+**Key Features:**
+- **Zero Configuration**: The entire handbook has been pre-processed into a highly optimized BM25 search index that ships directly inside the library.
+- **Offline Search**: Search the internal knowledge base instantly without an internet connection or API keys.
+- **Live Troubleshooting**: Connects to your live DCS/Historian data to offer precise operational suggestions (Requires OpenAI API key).
+
+#### Use Case 1: Pure Offline Knowledge Search
+```python
+from pap_ai_era.copilot import CopilotPapaiera
+
+# Initialize the copilot
+copilot = CopilotPapaiera()
+
+# Search the internal PapAiEra knowledge base
+results = copilot.search_knowledge("Why is the paper surface draggy or picking?", top_n=2)
+
+for result in results:
+    print(f"--- From Page {result['metadata']['page']} ---")
+    print(result['text'])
+```
+
+#### Use Case 2: Live DCS Troubleshooting
+```python
+import pandas as pd
+from pap_ai_era.copilot import CopilotPapaiera
+
+copilot = CopilotPapaiera()
+
+# Load your live DCS / Historian data averages
+dcs_data = pd.read_csv("live_machine_data.csv")
+
+# Ask the Copilot to troubleshoot a current problem using your live data
+answer = copilot.ask_openai(
+    query="We are experiencing picking on the center press roll. Based on my data, what should I change?",
+    api_key="your-openai-api-key",
+    historian_data=dcs_data
+)
+print(answer)
+# "According to PapAiEra, press roll picking is caused by low temperature. 
+# Looking at your historian data, your headbox temperature is currently 42°C (which is low). 
+# Suggestion: Increase steam flow to the wire pit to reach 48°C."
+```
+
+---
+
 ## Troubleshooting Guide
 **1. Optimization returns `success: False`**: Target constraints are mathematically impossible. Adjust boundaries in the `bounds` variables.
 **2. Import Errors**: Ensure you run `pip install PapAiEra` in an active environment.

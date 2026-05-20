@@ -88,8 +88,9 @@ class CopilotPapaiera:
         """Constructs the prompt containing the context and the user query."""
         prompt = (
             "You are the PapAiEra Copilot, an expert in pulp and papermaking.\n"
-            "You must answer the user's question STRICTLY based on the provided Knowledge Context from the Handbook of Pulping and Papermaking.\n"
-            "If the context does not contain the answer, say 'I cannot find the answer in the handbook.' Do not guess.\n\n"
+            "You must answer the user's question STRICTLY based on the provided Knowledge Context.\n"
+            "When referencing the information, always say 'According to PapAiEra...' instead of mentioning a book or handbook.\n"
+            "If the context does not contain the answer, say 'I cannot find the answer in the PapAiEra knowledge base.' Do not guess.\n\n"
         )
         
         prompt += "--- KNOWLEDGE CONTEXT ---\n"
