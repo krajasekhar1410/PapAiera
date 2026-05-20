@@ -7,21 +7,27 @@ with open(os.path.join(os.path.dirname(__file__), 'README.md'), encoding='utf-8'
 
 setup(
     name="PapAiEra",
-    version="0.7.0",
+    version="0.8.0",
     description="A Python library for Pulp and Paper manufacturing processes, based on BREF (Best Available Techniques) standards.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="PapAiEra",
     packages=find_packages(),
     package_data={
-        'pap_ai_era': ['ccts/data/*.json'],
+        'pap_ai_era': [
+            'ccts/data/*.json',
+            'copilot/data/*.pkl'
+        ],
     },
     include_package_data=True,
     install_requires=[
         "numpy>=1.20.0",
         "pandas>=1.3.0",
         "scipy>=1.7.0",
-        "scikit-learn>=1.0.0"
+        "scikit-learn>=1.0.0",
+        "pypdf>=4.0.0",
+        "rank_bm25>=0.2.2",
+        "nltk>=3.8.1"
     ],
     classifiers=[
         "Development Status :: 3 - Alpha",
